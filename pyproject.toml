@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "midi2svara"
+version = "0.1.0"
+description = "Turns MIDI and annotated recordings into gamaka changepoints"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "PyYAML",
+    "rich",
+    "matplotlib",
+]
+
+[project.scripts]
+midi2svara = "midi2svara.__main__:cli"
+
+[tool.setuptools.packages.find]
+include = ["midi2svara*"]
