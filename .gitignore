@@ -1,0 +1,14 @@
+build/
+Build/
+*.o
+*.so
+*.dylib
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.cache/
+
+cmake_test_discovery_*.json
+.DS_Store
