@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(FluidPitch2 VERSION 0.14.0)
+project(MIDI2Svara VERSION 0.14.0)
 
-set(PROJECT_NAME "Fluid Pitch 2")
+set(PROJECT_NAME "MIDI2Svara")
 set(CURRENT_VERSION 0.14.0)
 set(CURRENT_PLUGIN_CODE Fp2a)
 
