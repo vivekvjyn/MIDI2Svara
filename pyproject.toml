@@ -15,10 +15,11 @@ dependencies = [
     "PyYAML",
     "rich",
     "matplotlib",
+    "mir_eval",
 ]
 
 [project.scripts]
-midi2svara = "midi2svara.__main__:cli"
+midi2svara = "midi2svara.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["midi2svara*"]

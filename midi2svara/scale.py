@@ -29,31 +29,6 @@ def parse(config, name, annotation):
     return letter, shift
 
 
-def resolve(config, name, annotation, pitch=None):
-    parsed = parse(config, name, annotation)
-    if parsed is None:
-        return None, None
-    letter, shift = parsed
-    position = letters(config, name)[letter]
-    if shift is not None:
-        return letter, position + shift
-    if pitch is None or len(pitch) == 0 or np.isnan(pitch).all():
-        return letter, position
-    octave = config["settings"]["octave"]
-    span = config["settings"]["sthayiSpan"]
-    centre = float(np.nanmedian(pitch))
-    candidates = [position + octave * k for k in range(-span, span + 1)]
-    return letter, min(candidates, key=lambda cents: abs(cents - centre))
-
-
-def fold(config, cents):
-    return int(round(cents)) % int(config["settings"]["octave"])
-
-
-def syllables(config, letter):
-    return config["names"].get(letter, letter)
-
-
 def marks(config):
     below = above = ""
     for mark, sign in config["settings"]["sthayiMarks"].items():
@@ -62,3 +37,66 @@ def marks(config):
         else:
             above = mark
     return below, above
+
+
+def positions(config, name):
+    base = letters(config, name)
+    octave = config["settings"]["octave"]
+    span = config["settings"]["sthayiSpan"]
+    below, above = marks(config)
+    out = dict(base)
+    for letter, cents in base.items():
+        for k in range(1, span + 1):
+            out[letter + above * k] = cents + octave * k
+            out[letter + below * k] = cents - octave * k
+    return out
+
+
+def qualified(config, letter, offset):
+    below, above = marks(config)
+    if offset > 0:
+        return letter + above * int(offset)
+    if offset < 0:
+        return letter + below * int(-offset)
+    return letter
+
+
+def position(config, name, svara):
+    return positions(config, name)[svara]
+
+
+def neighbours(config, name, svara):
+    here = position(config, name, svara)
+    found = sorted(positions(config, name).values())
+    below = [cents for cents in found if cents < here - 1e-6]
+    above = [cents for cents in found if cents > here + 1e-6]
+    return (max(below) if below else here), (min(above) if above else here)
+
+
+def resolve(config, name, annotation, pitch=None):
+    parsed = parse(config, name, annotation)
+    if parsed is None:
+        return None, None
+    letter, shift = parsed
+    base = letters(config, name)[letter]
+    octave = config["settings"]["octave"]
+    if shift is None:
+        if pitch is None or len(pitch) == 0 or np.isnan(pitch).all():
+            offset = 0
+        else:
+            span = config["settings"]["sthayiSpan"]
+            centre = float(np.nanmedian(pitch))
+            candidates = [base + octave * k for k in range(-span, span + 1)]
+            best = min(candidates, key=lambda cents: abs(cents - centre))
+            offset = int(round((best - base) / octave))
+    else:
+        offset = int(round(shift / octave))
+    return qualified(config, letter, offset), base + offset * octave
+
+
+def fold(config, cents):
+    return int(round(cents)) % int(config["settings"]["octave"])
+
+
+def syllables(config, letter):
+    return config["names"].get(letter, letter)

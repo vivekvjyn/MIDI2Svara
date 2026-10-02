@@ -59,7 +59,7 @@ def load_pitch(path, tonic, settings):
     if data.ndim != 2 or data.shape[1] < 2 or len(data) < 2:
         return None
     time = data[:, 0]
-    values = fill_gaps(data[:, 1], settings["maxGap"])
+    values = np.array(fill_gaps(data[:, 1], settings["maxGap"]), dtype=float)
     values[values == 0] = np.nan
     with np.errstate(divide="ignore", invalid="ignore"):
         values = settings["octave"] * np.log2(values / float(tonic))
@@ -166,17 +166,21 @@ def raga(config, name, options, tonics, tempos, advance=None):
     os.makedirs(folder, exist_ok=True)
     source = os.path.join(annotations_dir, name)
     files = sorted(f for f in os.listdir(source) if f.endswith(".tsv"))
-    artists = sorted({f.split("_")[0] for f in files
-                      if (name, f.split("_")[0]) not in options["excluded"]})
+    artists = sorted({f.split("_")[0] for f in files})
 
     notes = []
     if advance is not None:
         advance(0, len(artists))
     for done, artist in enumerate(artists, 1):
         cache = os.path.join(folder, artist + ".pkl")
+        stored = None
         if os.path.exists(cache) and not options["force"]:
             with open(cache, "rb") as handle:
-                notes.extend(pickle.load(handle))
+                cached = pickle.load(handle)
+            if isinstance(cached, tuple) and len(cached) == 2 and cached[0] == 2:
+                stored = cached[1]
+        if stored is not None:
+            notes.extend(stored)
         else:
             pitch_file = os.path.join(pitch_dir, name, artist + ".tsv")
             annotation_file = os.path.join(source, f"{artist}_{name}.tsv")
@@ -185,7 +189,7 @@ def raga(config, name, options, tonics, tempos, advance=None):
                 built = recording(config, name, artist, annotation_file, pitch_file,
                                   float(tonics[artist]), float(tempos[name][artist]))
                 with open(cache, "wb") as handle:
-                    pickle.dump(built, handle, protocol=4)
+                    pickle.dump((2, built), handle, protocol=4)
                 notes.extend(built)
             elif os.path.exists(cache):
                 os.remove(cache)

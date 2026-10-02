@@ -5,15 +5,16 @@ import numpy as np
 
 from . import scale, shapes
 
-POINTS = 64
-BAND = 8
 
-ORDER = ["sthira", "khandippu", "ahata", "nokku", "odukkal", "kampita", "ravai",
-         "sphurita", "orikai", "janta", "jaru", "andola", "vali"]
-
-
-def grids():
+def grids(previous_interval, next_interval):
     amps = (60.0, 120.0, 200.0)
+    slides = []
+    if previous_interval:
+        slides.append((previous_interval, 0))
+    if next_interval:
+        slides.append((0, next_interval))
+    if not slides:
+        slides.append((0, 0))
     return {
         "sthira": [{}],
         "kampita": [{"cycles": c, "amp": a}
@@ -25,9 +26,9 @@ def grids():
         "vali": [{"cycles": c, "amp": a}
                  for c in (2.0, 3.0, 4.0, 5.0)
                  for a in (120.0, 180.0, 250.0)],
-        "sphurita": [{"cycles": c, "amp": a}
-                     for c in (3.0, 4.0, 6.0, 8.0)
-                     for a in amps],
+        "sphurita": [{"amp": a, "at": t, "rate": r}
+                     for a in amps for t in (0.5, 0.6, 0.7)
+                     for r in (30.0, 60.0, 100.0)],
         "ahata": [{"amp": a, "at": t, "width": w}
                   for a in amps for t in (0.3, 0.5, 0.7) for w in (0.1, 0.2, 0.3)],
         "khandippu": [{"amp": a, "at": t, "width": w}
@@ -39,28 +40,36 @@ def grids():
         "janta": [{"amp": a, "at": t, "rate": r}
                   for a in amps for t in (0.3, 0.5, 0.7) for r in (30.0, 60.0, 100.0)],
         "orikai": [{"amp": a, "at": t, "rate": r}
-                   for a in amps for t in (0.4, 0.6, 0.8) for r in (15.0, 30.0, 60.0)],
-        "jaru": [{"amp": a, "at": t, "rate": r}
-                 for a in amps for t in (0.3, 0.5, 0.7) for r in (5.0, 10.0, 20.0)],
+                   for a in amps for t in (0.65, 0.75, 0.85)
+                   for r in (15.0, 30.0, 60.0)],
+        "tripuchcha": [{"amp": a, "at": t, "rate": r}
+                       for a in amps for t in (0.5, 0.6, 0.7)
+                       for r in (30.0, 60.0, 100.0)],
+        "jaru": [{"start": s, "end": e, "at": t, "rate": r}
+                 for s, e in slides for t in (0.3, 0.5, 0.7)
+                 for r in (5.0, 10.0, 20.0)],
         "ravai": [{"amp": a, "at": t, "hold": h}
                   for a in amps for t in (0.4, 0.5, 0.6) for h in (0.2, 0.4, 0.6)],
     }
 
 
 def render(gamaka, params, beats):
+    points = 64
     amp = params.get("amp")
     at = params.get("at")
     if gamaka == "sthira":
         _, y = shapes.sthira(1.0)
     elif gamaka == "kampita":
-        _, y = shapes.kampita(1.0, amp, -amp, cycles=params["cycles"] * beats)
+        _, y = shapes.kampita(1.0, amp, -amp, rate=params["cycles"] * beats)
     elif gamaka == "andola":
-        _, y = shapes.andola(1.0, amp, -amp, cycles=params["cycles"] * beats)
+        _, y = shapes.andola(1.0, amp, -amp, rate=params["cycles"] * beats)
     elif gamaka == "vali":
-        _, y = shapes.vali(1.0, amp, -amp, cycles=params["cycles"] * beats)
+        _, y = shapes.vali(1.0, amp, -amp, rate=params["cycles"] * beats)
     elif gamaka == "sphurita":
-        _, y = shapes.sphurita(1.0, amp, 0.0, cycles=params["cycles"] * beats)
+        _, y = shapes.sphurita(1.0, amp, at, rate=params["rate"] * beats)
     elif gamaka == "ahata":
+        _, y = shapes.ahata(1.0, amp, at, params["width"])
+    elif gamaka == "pratyahata":
         _, y = shapes.ahata(1.0, amp, at, params["width"])
     elif gamaka == "khandippu":
         _, y = shapes.khandippu(1.0, -amp, at, params["width"])
@@ -72,15 +81,19 @@ def render(gamaka, params, beats):
         _, y = shapes.janta(1.0, amp, at, rate=params["rate"] * beats)
     elif gamaka == "orikai":
         _, y = shapes.orikai(1.0, amp, at, rate=params["rate"] * beats)
+    elif gamaka == "tripuchcha":
+        _, y = shapes.tripuchcha(1.0, amp, at, rate=params["rate"] * beats)
     elif gamaka == "jaru":
-        _, y = shapes.jaru(1.0, amp, at, rate=params["rate"] * beats)
+        _, y = shapes.jaru(1.0, params["start"], params["end"], at,
+                           rate=params["rate"] * beats)
     else:
         _, y = shapes.ravai(1.0, -amp, at, params["hold"])
-    grid = np.linspace(0.0, 1.0, POINTS)
+    grid = np.linspace(0.0, 1.0, points)
     return np.interp(grid, np.linspace(0.0, 1.0, len(y)), y)
 
 
 def pool(notes):
+    points = 64
     curves = []
     beats = []
     for note in notes:
@@ -88,7 +101,7 @@ def pool(notes):
         if len(pitch) < 2:
             continue
         relative = pitch - float(note["svarasthana"])
-        grid = np.linspace(0.0, 1.0, POINTS)
+        grid = np.linspace(0.0, 1.0, points)
         curves.append(np.interp(grid, np.linspace(0.0, 1.0, len(relative)), relative))
         beats.append(float(note["durationBeats"]))
     if not curves:
@@ -113,12 +126,17 @@ def dtw(target, curves, band):
     return dp[:, length, length]
 
 
-def match(curve, beats):
-    grid = grids()
-    rank = {name: i for i, name in enumerate(ORDER)}
+def match(curve, beats, previous_interval, next_interval):
+    points = 64
+    band = 8
+    order = ["sthira", "khandippu", "ahata", "nokku", "odukkal", "kampita",
+             "ravai", "sphurita", "orikai", "janta", "tripuchcha", "jaru",
+             "andola", "vali"]
+    grid = grids(previous_interval, next_interval)
+    rank = {name: i for i, name in enumerate(order)}
     centred = curve - curve.mean()
     entries = []
-    for name in ORDER:
+    for name in order:
         for params in grid[name]:
             entries.append((name, params))
     templates = []
@@ -126,20 +144,13 @@ def match(curve, beats):
         rendered = render(name, params, beats)
         templates.append(rendered - rendered.mean())
     templates = np.array(templates)
-    distance = ((templates - centred[None, :]) ** 2).sum(axis=1)
-    best_per_class = {}
-    index = 0
-    for name in ORDER:
-        size = len(grid[name])
-        best_per_class[name] = distance[index:index + size].min()
-        index += size
-    shortlist = sorted(ORDER, key=lambda n: (best_per_class[n], rank[n]))[:3]
-
-    candidates = [i for i, (name, _) in enumerate(entries) if name in shortlist]
-    warped = dtw(centred, templates[candidates], BAND) / (2.0 * POINTS)
-    pick = min(range(len(candidates)),
-               key=lambda k: (warped[k], rank[entries[candidates[k]][0]]))
-    return entries[candidates[pick]][0]
+    warped = dtw(centred, templates, band) / (2.0 * points)
+    pick = min(range(len(entries)),
+               key=lambda k: (warped[k], rank[entries[k][0]]))
+    gamaka = entries[pick][0]
+    if gamaka == "ahata" and next_interval < 0:
+        return "pratyahata"
+    return gamaka
 
 
 def raga(config, name, notes, output_dir, force, advance=None):
@@ -158,7 +169,7 @@ def raga(config, name, notes, output_dir, force, advance=None):
         key = (note["svara"], note["previous"], note["next"])
         groups.setdefault(key, []).append(note)
 
-    positions = scale.letters(config, name)
+    positions = scale.positions(config, name)
     keys = sorted(groups, key=lambda k: (positions[k[0]], positions[k[1]], positions[k[2]]))
     rows = []
     if advance is not None:
@@ -167,11 +178,13 @@ def raga(config, name, notes, output_dir, force, advance=None):
         pooled = pool(groups[key])
         if pooled is not None:
             curve, beats, previous_interval, next_interval = pooled
-            gamaka = match(curve, beats)
+            gamaka = match(curve, beats, previous_interval, next_interval)
             here = positions[key[0]]
-            bounds = [here, here + previous_interval, here + next_interval]
-            syllables = [scale.syllables(config, part) for part in key]
-            folder = "_".join(syllables)
+            if gamaka in ("kampita", "andola", "vali"):
+                low, high = scale.neighbours(config, name, key[0])
+            else:
+                bounds = [here, here + previous_interval, here + next_interval]
+                low, high = min(bounds), max(bounds)
             rows.append({
                 "svara": key[0],
                 "previous": key[1],
@@ -179,9 +192,8 @@ def raga(config, name, notes, output_dir, force, advance=None):
                 "previousInterval": previous_interval,
                 "nextInterval": next_interval,
                 "gamaka": gamaka,
-                "params": {"top": round(max(bounds), 1),
-                           "bottom": round(min(bounds), 1)},
-                "plot": f"{name}/{key[0]}/{folder}",
+                "params": {"top": round(high, 1),
+                           "bottom": round(low, 1)},
             })
         if advance is not None:
             advance(done, len(keys))
