@@ -1,200 +1,178 @@
 import os
 
-import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import numpy as np
 
-from . import gamaka, raga
+from . import scale, shapes
+
+SURFACE = "#fcfcfb"
+INK = "#0b0b0b"
+MUTED = "#898781"
+GRIDLINE = "#e1e0d9"
+AXIS = "#c3c2b7"
+PANEL = (3.4, 2.6)
+DPI = 150
+PADDING = 160.0
+MARGIN = 0.12
+EDGE = 0.10
+GAP = 0.02
+LANE = 0.8
+CURVE = 2.2
+BLOCK = 68.0
+INSET = 0.03
+BLOCK_ALPHA = 0.22
+LABEL = 8.5
+TITLE = 8.0
+TICK = 4.0
 
 
-def _style(config):
-    surface = config["plot"]["surface"]
-    return {
-        "font.family": config["plot"]["fontFamily"],
-        "font.sans-serif": config["plot"]["fontSans"],
-        "figure.facecolor": surface,
-        "axes.facecolor": surface,
-        "savefig.facecolor": surface,
-        "axes.edgecolor": config["plot"]["axis"],
-        "axes.labelcolor": config["plot"]["inkMuted"],
-        "xtick.color": config["plot"]["inkMuted"],
-        "ytick.color": config["plot"]["inkMuted"],
-        "text.color": config["plot"]["ink"],
-        "axes.linewidth": config["plot"]["laneWidth"],
+def rc():
+    plt.rcParams.update({
+        "font.family": "sans-serif",
+        "font.sans-serif": ["DejaVu Sans", "Segoe UI", "Helvetica", "Arial"],
+        "figure.facecolor": SURFACE,
+        "axes.facecolor": SURFACE,
+        "savefig.facecolor": SURFACE,
+        "axes.edgecolor": AXIS,
+        "axes.labelcolor": MUTED,
+        "xtick.color": MUTED,
+        "ytick.color": MUTED,
+        "text.color": INK,
+        "axes.linewidth": LANE,
         "xtick.major.size": 0,
         "ytick.major.size": 0,
-        "font.size": config["plot"]["fontSize"],
-    }
+        "font.size": 9,
+    })
 
 
-def _label(config, name, cents):
-    octave = config["generator"]["octave"]
-    for letter, base in raga.svarasthanas(config, name).items():
-        for shift, mark in ((-octave, config["plot"]["markBelow"]),
-                            (0, ""),
-                            (octave, config["plot"]["markAbove"])):
-            if base + shift == cents:
-                return letter + mark
-    return ""
+def lanes(config, name):
+    letters = scale.letters(config, name)
+    octave = config["settings"]["octave"]
+    below, above = scale.marks(config)
+    lanes, labels = [], []
+    for letter, base in letters.items():
+        for shift, mark in ((-octave, below), (0.0, ""), (octave, above)):
+            lanes.append(base + shift)
+            labels.append(letter + mark)
+    return lanes, labels
 
 
-def _draw(axes, config, name, case, scale, observed, svara, style):
-    plot = config["plot"]
-    grid = np.linspace(0.0, 1.0, style["curvePoints"])
-    points = np.array(case["points"], dtype=float)
-    contour = gamaka.spline(points[:, 0], points[:, 1], grid)
+def curve(config, row, length, here):
+    gamaka = row["gamaka"]
+    params = row["params"]
+    top = float(params["top"])
+    bottom = float(params["bottom"])
+    if gamaka == "sthira":
+        return np.full(512, float(here))
+    if gamaka in ("kampita", "andola", "vali"):
+        function = {"kampita": shapes.kampita, "andola": shapes.andola,
+                    "vali": shapes.vali}[gamaka]
+        return function(length, top, bottom)[1]
+    if gamaka == "sphurita":
+        return shapes.sphurita(length, top, bottom)[1]
+    if gamaka == "ahata":
+        return bottom + shapes.ahata(length, top - bottom)[1]
+    if gamaka == "khandippu":
+        return top + shapes.khandippu(length, bottom - top)[1]
+    if gamaka == "nokku":
+        return bottom + shapes.nokku(length, top - bottom)[1]
+    if gamaka == "odukkal":
+        return top + shapes.odukkal(length, bottom - top)[1]
+    if gamaka in ("janta", "orikai", "jaru"):
+        function = {"janta": shapes.janta, "orikai": shapes.orikai,
+                    "jaru": shapes.jaru}[gamaka]
+        return bottom + function(length, top - bottom)[1]
+    return top + shapes.ravai(length, bottom - top)[1]
 
-    lanes = list(scale.svarasthanas().values())
-    low = min(contour.min(), observed.min() if len(observed) else 0.0) - plot["padding"]
-    high = max(contour.max(), observed.max() if len(observed) else 0.0) + plot["padding"]
 
-    for lane in lanes:
-        if low <= lane <= high:
-            axes.axhline(lane, color=style["gridline"],
-                          linewidth=plot["laneWidth"], zorder=0)
-    for beat in style["beats"]:
-        axes.axvline(beat, color=style["gridline"],
-                     linewidth=plot["laneWidth"], zorder=0)
+def context(config, row):
+    return " ".join([scale.syllables(config, row["svara"]),
+                     scale.syllables(config, row["previous"]),
+                     scale.syllables(config, row["next"])])
 
-    height = plot["noteHeight"]
-    inset = plot["noteInset"]
-    colour = style["svaraColours"].get(case["svara"], style["inkMuted"])
-    axes.add_patch(Rectangle((inset, svara - height / 2), 1.0 - 2 * inset, height,
-                             facecolor=colour, alpha=plot["blockAlpha"],
+
+def draw(axes, config, name, row, length):
+    letters = scale.letters(config, name)
+    here = letters[row["svara"]]
+    grid, labels = lanes(config, name)
+    margin = MARGIN * length
+    x = np.linspace(0.0, length, 512)
+    y = curve(config, row, length, here)
+
+    notes = [(here + row["previousInterval"], scale.syllables(config, row["previous"]), False),
+             (here + row["nextInterval"], scale.syllables(config, row["next"]), True)]
+
+    low = min(y.min() - PADDING, here - BLOCK)
+    high = max(y.max() + PADDING, here + BLOCK)
+    for position, _, _ in notes:
+        low, high = min(low, position - BLOCK / 2), max(high, position + BLOCK / 2)
+
+    shown = [(lane, label) for lane, label in zip(grid, labels) if low <= lane <= high]
+    for lane, _ in shown:
+        axes.axhline(lane, color=GRIDLINE, linewidth=LANE, zorder=0)
+    for beat in range(int(length) + 1):
+        axes.axvline(beat, color=GRIDLINE, linewidth=LANE, zorder=0)
+
+    axes.add_patch(Rectangle((INSET * length, here - BLOCK / 2),
+                             (1.0 - 2 * INSET) * length, BLOCK,
+                             facecolor=GRIDLINE, alpha=BLOCK_ALPHA,
                              edgecolor="none", zorder=1))
-    axes.add_patch(Rectangle((inset, svara - height / 2), 1.0 - 2 * inset, height,
-                             facecolor="none", edgecolor=colour,
-                             linewidth=plot["noteEdge"], zorder=2))
-    axes.text(0.5, svara, case["svara"], ha="center", va="center",
-              fontsize=plot["labelSize"], color=style["inkMuted"], zorder=3)
+    axes.add_patch(Rectangle((INSET * length, here - BLOCK / 2),
+                             (1.0 - 2 * INSET) * length, BLOCK,
+                             facecolor="none", edgecolor=AXIS,
+                             linewidth=1.1, zorder=2))
+    axes.text(length / 2.0, here, row["svara"], ha="center", va="center",
+              fontsize=LABEL, color=MUTED, zorder=3)
 
-    for row in observed:
-        axes.plot(row, color=style["reference"],
-                  linewidth=plot["referenceWidth"], alpha=plot["referenceAlpha"],
-                  solid_capstyle="round", zorder=3.5)
+    axes.plot(x, y, color=INK, linewidth=CURVE, solid_capstyle="round", zorder=4)
 
-    axes.plot(grid, contour, color=style["ink"],
-              linewidth=plot["curveWidth"], solid_capstyle="round", zorder=4)
-    axes.plot(points[:, 0], points[:, 1], linestyle="none", marker="o",
-              markersize=plot["pointSize"], markerfacecolor=style["surface"],
-              markeredgecolor=style["ink"], markeredgewidth=plot["pointEdge"], zorder=5)
+    for position, syllable, right in notes:
+        start = length if right else -EDGE * length
+        axes.add_patch(Rectangle((start, position - BLOCK / 2),
+                                 EDGE * length, BLOCK,
+                                 facecolor=GRIDLINE, alpha=BLOCK_ALPHA,
+                                 edgecolor="none", zorder=1))
+        axes.add_patch(Rectangle((start, position - BLOCK / 2),
+                                 EDGE * length, BLOCK,
+                                 facecolor="none", edgecolor=AXIS,
+                                 linewidth=1.1, zorder=2))
+        axes.text(start + EDGE * length / 2.0, position, syllable,
+                  ha="center", va="center", fontsize=LABEL, color=MUTED, zorder=3)
 
-    axes.set_xlim(-style["margin"], 1.0 + style["margin"])
+    heading = context(config, row)
+    axes.set_xlim(-margin, length + margin)
     axes.set_ylim(low, high)
-    axes.set_yticks(lanes)
-    axes.set_yticklabels([_label(config, name, c) for c in lanes])
-    axes.set_xticks(list(style["beats"]))
-    axes.set_xticklabels([""] * len(style["beats"]))
+    axes.set_yticks([lane for lane, _ in shown])
+    axes.set_yticklabels([label for _, label in shown])
+    axes.set_xticks([])
+    axes.set_xticklabels([])
     for side in ("top", "right"):
         axes.spines[side].set_visible(False)
     for side in ("left", "bottom"):
-        axes.spines[side].set_color(style["axis"])
-    axes.tick_params(axis="both", pad=plot["tickPad"])
-
-    axes.set_title(f"{case['type']} · {case['widthSteps']:.1f}st · n={case['evidence']}",
-                   loc="left", fontsize=plot["titleSize"], color=style["inkMuted"],
-                   pad=plot["titlePad"])
+        axes.spines[side].set_color(AXIS)
+    axes.tick_params(axis="y", pad=TICK)
+    axes.set_title(f"{name.capitalize()} · {heading}\n{row['gamaka']}", loc="left",
+                   fontsize=TITLE, color=MUTED, linespacing=1.5, pad=4.0)
 
 
-def _observed(config, samples, case, scale):
-    grid = np.linspace(0.0, 1.0, config["plot"]["referencePoints"])
-    here = case["svarasthana"]
-    rows = []
-    for sample in samples:
-        if int(scale.position(sample["svarasthana"], 0)) != int(here):
-            continue
-        times = np.asarray(sample["normalizedTime"], dtype=float)
-        if len(times) < 2:
-            continue
-        rows.append(np.interp(grid, times, scale.reframe(sample["svarasthana"],
-                                                         sample["pitchOffsetCents"])))
-    if not rows:
-        return np.zeros((0, len(grid)))
-    excursion = np.array([np.ptp(row) for row in rows])
-    chosen = np.argsort(np.abs(excursion - np.median(excursion)))[
-        :config["plot"]["referenceCount"]]
-    return np.array([rows[i] for i in np.sort(chosen)])
-
-
-def _order(config, case):
-    ranks = config["plot"]["intervalOrder"]
-    return (ranks.get(gamaka.interval_class(config, case["previousInterval"]),
-                      len(ranks)),
-            ranks.get(gamaka.interval_class(config, case["nextInterval"]),
-                      len(ranks)))
-
-
-def figures(config, name, offsets, samples, cases, output_dir, durations):
-    scale = gamaka.Scale(config, name, offsets)
-    plot = config["plot"]
-    style = {
-        "surface": plot["surface"],
-        "ink": plot["ink"],
-        "inkMuted": plot["inkMuted"],
-        "gridline": plot["gridline"],
-        "axis": plot["axis"],
-        "reference": plot["reference"],
-        "svaraColours": plot["svaraColours"],
-        "curvePoints": plot["curvePoints"],
-        "beats": plot["beats"],
-        "margin": plot["margin"],
-    }
-    columns = plot["columns"]
-    os.makedirs(output_dir, exist_ok=True)
-    written = []
-
-    for duration in durations:
-        chosen = [c for c in cases if duration is None or c["durationName"] == duration]
-        if not chosen:
-            continue
-
-        for letter in sorted({c["svara"] for c in chosen}, key=scale.svarasthanas().get):
-            group = sorted([c for c in chosen if c["svara"] == letter],
-                           key=lambda c: _order(config, c))
-            rows = int(np.ceil(len(group) / columns))
-            total = rows * columns
-
-            plt.rcParams.update(_style(config))
-            figure_, axes_list = plt.subplots(
-                rows, columns,
-                figsize=(plot["panelWidth"] * columns, plot["panelHeight"] * rows),
-                squeeze=False)
-            axes_list = axes_list.ravel()
-            svara = scale.svarasthanas()[letter]
-
-            for position, case in enumerate(group):
-                axes = axes_list[position]
-                _draw(axes, config, name, case, scale,
-                      _observed(config, samples, case, scale), svara, style)
-                if position % columns == 0:
-                    axes.set_ylabel(gamaka.interval_class(
-                        config, case["previousInterval"]),
-                        fontsize=plot["axisLabelSize"])
-                if position // columns == 0:
-                    axes.set_xlabel(gamaka.interval_class(
-                        config, case["nextInterval"]) + plot["departureArrow"],
-                        fontsize=plot["axisLabelSize"])
-
-            for axes in axes_list[len(group):total]:
-                axes.set_visible(False)
-
-            figure_.tight_layout(rect=tuple(plot["layoutRect"]))
-            top = plot["titleTop"]
-            figure_.text(plot["titleX"], top,
-                         f"{name.capitalize()} · {letter}", ha="left", va="top",
-                         fontsize=plot["headingSize"], color=style["ink"],
-                         fontweight="bold")
-            figure_.text(plot["titleX"], top - plot["titleGap"] / figure_.get_figheight(),
-                         f"{duration} notes · {len(group)} contexts", ha="left",
-                         va="top", fontsize=plot["subheadingSize"],
-                         color=style["inkMuted"])
-
-            suffix = "" if duration is None else f"_{duration}"
-            path = os.path.join(output_dir, f"{name}_{letter.lower()}{suffix}.png")
-            figure_.savefig(path, dpi=plot["dpi"])
-            plt.close(figure_)
-            written.append(path)
-
+def raga(config, name, rows, plots_dir, lengths, advance=None):
+    rc()
+    written = 0
+    if advance is not None:
+        advance(0, len(rows))
+    for done, row in enumerate(rows, 1):
+        folder = os.path.join(plots_dir, row["plot"])
+        os.makedirs(folder, exist_ok=True)
+        for length in lengths:
+            figure, axes = plt.subplots(figsize=PANEL)
+            draw(axes, config, name, row, float(length))
+            figure.tight_layout()
+            figure.savefig(os.path.join(folder, f"{float(length):g}.png"), dpi=DPI)
+            plt.close(figure)
+            written += 1
+        if advance is not None:
+            advance(done, len(rows))
     return written

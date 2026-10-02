@@ -10,5 +10,6 @@ dist/
 data/annotations/
 data/pitch_tracks/
 data/shapes.pkl
-res/
-docs/
+outputs/
+plots/
+shapes/

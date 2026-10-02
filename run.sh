@@ -2,79 +2,18 @@
 set -e
 
 python3 -m midi2svara \
-  --ragas kalyani sri abhogi \
-  --durations short long \
   --octave 1200 \
   --single-letter 1 \
   --sthayi-span 2 \
+  --sthayi-marks '^=1' '_=-1' \
   --max-gap 12 \
   --smoothing 0.5 \
   --min-points 4 \
-  --prominence 5.0 \
+  --min-length 5 \
   --max-nan-fraction 0.3 \
-  --extract-tolerance 6.0 \
-  --time-scale 200 \
-  --snap-sigma 45 \
-  --extremum-snap 0.7 \
-  --midpoint-snap 0.35 \
-  --max-deviation 70 \
-  --histogram-sigma 15 \
-  --min-frames 200 \
-  --grid 96 \
-  --notes 8 \
-  --tie 1.0 \
-  --max-fev 150 \
-  --tolerance 8.0 \
-  --thin-notes 3 \
-  --thin-margin 8.0 \
-  --max-cycles 24.0 \
-  --rate 0.0 400.0 \
-  --decay -0.12 9.0 \
-  --seam 120.0 \
-  --seam-min-time 0.0167 \
-  --seam-steps 24 \
-  --seam-relax 0.6 \
-  --arrive 0.12 \
-  --trim-factor 2.5 \
-  --widen-from 4 \
-  --widen-step 0.15 \
-  --plateau-edge 8.0 \
-  --limit 60.0 \
-  --interval-edges -350 -50 50 350 \
-  --intervals 'vv=-400' 'v=-200' '"="=0' '"^"=200' '"^^"=400' \
-  --durations-set short=0.5 long=2.0 \
-  --intervals-label '"?"=0' 'vv=1' 'v=2' '"="=3' '"^"=4' '"^^"=5' \
-  --long-beat 1.5 \
-  --columns 6 \
-  --panel-width 2.0 \
-  --panel-height 2.1 \
-  --dpi 150 \
-  --curve-points 1500 \
-  --reference-points 200 \
-  --reference-count 3 \
-  --note-height 68.0 \
-  --note-inset 0.03 \
-  --note-edge 1.1 \
-  --block-alpha 0.22 \
-  --padding 160.0 \
-  --margin 0.05 \
-  --lane-width 0.8 \
-  --curve-width 2.2 \
-  --reference-width 1.6 \
-  --reference-alpha 0.7 \
-  --point-size 2.9 \
-  --point-edge 0.9 \
-  --font-size 9 \
-  --title-size 8 \
-  --title-pad 4 \
-  --label-size 8.5 \
-  --axis-label-size 8 \
-  --tick-pad 4 \
-  --heading-size 15 \
-  --subheading-size 8.5 \
-  --title-top 0.997 \
-  --title-gap 0.45 \
-  --title-x 0.01 \
-  --layout-rect 0.01 0.03 0.99 0.98 \
-  --beats 0.0 0.5 1.0 \
+  --lengths 1 2 4 \
+  --svara-names 'S=Sa' 'R=Ri' 'G=Ga' 'M=Ma' 'P=Pa' 'D=Da' 'N=Ni' \
+  --cache-dir .cache \
+  --plots-dir plots \
+  --output-dir outputs \
   "$@"
