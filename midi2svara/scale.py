@@ -65,14 +65,6 @@ def position(config, name, svara):
     return positions(config, name)[svara]
 
 
-def neighbours(config, name, svara):
-    here = position(config, name, svara)
-    found = sorted(positions(config, name).values())
-    below = [cents for cents in found if cents < here - 1e-6]
-    above = [cents for cents in found if cents > here + 1e-6]
-    return (max(below) if below else here), (min(above) if above else here)
-
-
 def resolve(config, name, annotation, pitch=None):
     parsed = parse(config, name, annotation)
     if parsed is None:

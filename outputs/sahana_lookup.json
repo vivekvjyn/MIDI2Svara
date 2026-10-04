@@ -5,10 +5,10 @@
   "next": "D_",
   "previousInterval": 200,
   "nextInterval": 400,
-  "gamaka": "khandippu",
+  "gamaka": "ravai",
   "params": {
-   "top": -300.0,
-   "bottom": -700.0
+   "top": -542.6,
+   "bottom": -724.3
   }
  },
  {
@@ -19,8 +19,8 @@
   "nextInterval": -200,
   "gamaka": "andola",
   "params": {
-   "top": -300.0,
-   "bottom": -700.0
+   "top": -218.6,
+   "bottom": -544.1
   }
  },
  {
@@ -31,8 +31,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": -300.0,
-   "bottom": -700.0
+   "top": -258.6,
+   "bottom": -506.4
   }
  },
  {
@@ -43,8 +43,8 @@
   "nextInterval": 100,
   "gamaka": "janta",
   "params": {
-   "top": -200.0,
-   "bottom": -300.0
+   "top": -287.5,
+   "bottom": -324.5
   }
  },
  {
@@ -55,8 +55,8 @@
   "nextInterval": -200,
   "gamaka": "jaru",
   "params": {
-   "top": 0.0,
-   "bottom": -500.0
+   "top": 16.2,
+   "bottom": -335.6
   }
  },
  {
@@ -67,8 +67,8 @@
   "nextInterval": 100,
   "gamaka": "jaru",
   "params": {
-   "top": 0.0,
-   "bottom": -300.0
+   "top": 14.4,
+   "bottom": -168.4
   }
  },
  {
@@ -79,8 +79,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 0.0,
-   "bottom": -300.0
+   "top": 15.3,
+   "bottom": -310.8
   }
  },
  {
@@ -91,8 +91,8 @@
   "nextInterval": 900,
   "gamaka": "vali",
   "params": {
-   "top": 0.0,
-   "bottom": -300.0
+   "top": 168.7,
+   "bottom": -535.8
   }
  },
  {
@@ -103,8 +103,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 0.0,
-   "bottom": -200.0
+   "top": 22.2,
+   "bottom": -200.6
   }
  },
  {
@@ -115,8 +115,8 @@
   "nextInterval": 200,
   "gamaka": "andola",
   "params": {
-   "top": 0.0,
-   "bottom": -300.0
+   "top": 264.8,
+   "bottom": 17.0
   }
  },
  {
@@ -127,8 +127,8 @@
   "nextInterval": 200,
   "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": -200.0
+   "top": -5.1,
+   "bottom": -248.0
   }
  },
  {
@@ -137,10 +137,10 @@
   "next": "D_",
   "previousInterval": -200,
   "nextInterval": -300,
-  "gamaka": "pratyahata",
+  "gamaka": "vali",
   "params": {
-   "top": 0.0,
-   "bottom": -300.0
+   "top": 41.0,
+   "bottom": -318.2
   }
  },
  {
@@ -149,10 +149,10 @@
   "next": "R",
   "previousInterval": -200,
   "nextInterval": 200,
-  "gamaka": "orikai",
+  "gamaka": "janta",
   "params": {
-   "top": 200.0,
-   "bottom": -200.0
+   "top": 21.7,
+   "bottom": -84.8
   }
  },
  {
@@ -163,8 +163,8 @@
   "nextInterval": -200,
   "gamaka": "odukkal",
   "params": {
-   "top": 200.0,
-   "bottom": -200.0
+   "top": 241.8,
+   "bottom": -7.8
   }
  },
  {
@@ -173,10 +173,10 @@
   "next": "R",
   "previousInterval": 200,
   "nextInterval": 200,
-  "gamaka": "nokku",
+  "gamaka": "jaru",
   "params": {
-   "top": 200.0,
-   "bottom": 0.0
+   "top": 180.4,
+   "bottom": -39.5
   }
  },
  {
@@ -187,8 +187,8 @@
   "nextInterval": 500,
   "gamaka": "ahata",
   "params": {
-   "top": 500.0,
-   "bottom": 0.0
+   "top": 38.8,
+   "bottom": -71.8
   }
  },
  {
@@ -199,8 +199,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 500.0,
-   "bottom": 0.0
+   "top": 519.9,
+   "bottom": 66.1
   }
  },
  {
@@ -211,8 +211,8 @@
   "nextInterval": 200,
   "gamaka": "khandippu",
   "params": {
-   "top": 1000.0,
-   "bottom": 0.0
+   "top": 58.4,
+   "bottom": -309.7
   }
  },
  {
@@ -223,8 +223,8 @@
   "nextInterval": -400,
   "gamaka": "jaru",
   "params": {
-   "top": 200.0,
-   "bottom": -200.0
+   "top": 250.6,
+   "bottom": -38.6
   }
  },
  {
@@ -235,8 +235,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 299.8,
+   "bottom": -32.7
   }
  },
  {
@@ -247,8 +247,8 @@
   "nextInterval": 500,
   "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": 0.0
+   "top": 454.0,
+   "bottom": 21.8
   }
  },
  {
@@ -259,8 +259,8 @@
   "nextInterval": -400,
   "gamaka": "andola",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 558.2,
+   "bottom": 81.8
   }
  },
  {
@@ -271,8 +271,8 @@
   "nextInterval": 300,
   "gamaka": "janta",
   "params": {
-   "top": 500.0,
-   "bottom": 200.0
+   "top": 369.1,
+   "bottom": -125.1
   }
  },
  {
@@ -283,8 +283,8 @@
   "nextInterval": -200,
   "gamaka": "pratyahata",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 446.4,
+   "bottom": 203.8
   }
  },
  {
@@ -295,8 +295,8 @@
   "nextInterval": 200,
   "gamaka": "kampita",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 422.4,
+   "bottom": 182.7
   }
  },
  {
@@ -307,8 +307,8 @@
   "nextInterval": 500,
   "gamaka": "vali",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 405.8,
+   "bottom": 113.0
   }
  },
  {
@@ -319,8 +319,8 @@
   "nextInterval": 700,
   "gamaka": "vali",
   "params": {
-   "top": 400.0,
-   "bottom": 0.0
+   "top": 546.4,
+   "bottom": 115.2
   }
  },
  {
@@ -329,10 +329,10 @@
   "next": "G",
   "previousInterval": 300,
   "nextInterval": 200,
-  "gamaka": "ahata",
+  "gamaka": "jaru",
   "params": {
-   "top": 500.0,
-   "bottom": 200.0
+   "top": 480.4,
+   "bottom": 229.2
   }
  },
  {
@@ -343,8 +343,8 @@
   "nextInterval": 500,
   "gamaka": "jaru",
   "params": {
-   "top": 700.0,
-   "bottom": 200.0
+   "top": 477.1,
+   "bottom": 123.0
   }
  },
  {
@@ -355,8 +355,8 @@
   "nextInterval": 700,
   "gamaka": "nokku",
   "params": {
-   "top": 900.0,
-   "bottom": 200.0
+   "top": 464.9,
+   "bottom": 210.9
   }
  },
  {
@@ -367,8 +367,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": 200.0
+   "top": 570.3,
+   "bottom": 305.1
   }
  },
  {
@@ -379,8 +379,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 700.0,
-   "bottom": 200.0
+   "top": 705.9,
+   "bottom": 178.6
   }
  },
  {
@@ -391,8 +391,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 900.0,
-   "bottom": 200.0
+   "top": 685.6,
+   "bottom": 11.9
   }
  },
  {
@@ -403,8 +403,8 @@
   "nextInterval": -200,
   "gamaka": "pratyahata",
   "params": {
-   "top": 400.0,
-   "bottom": 200.0
+   "top": 483.6,
+   "bottom": 229.5
   }
  },
  {
@@ -413,10 +413,10 @@
   "next": "G",
   "previousInterval": -200,
   "nextInterval": 0,
-  "gamaka": "ahata",
+  "gamaka": "vali",
   "params": {
-   "top": 400.0,
-   "bottom": 200.0
+   "top": 586.4,
+   "bottom": 192.5
   }
  },
  {
@@ -427,8 +427,8 @@
   "nextInterval": 100,
   "gamaka": "jaru",
   "params": {
-   "top": 500.0,
-   "bottom": 200.0
+   "top": 403.8,
+   "bottom": 326.4
   }
  },
  {
@@ -439,8 +439,8 @@
   "nextInterval": -200,
   "gamaka": "orikai",
   "params": {
-   "top": 400.0,
-   "bottom": 200.0
+   "top": 520.3,
+   "bottom": 420.6
   }
  },
  {
@@ -451,8 +451,8 @@
   "nextInterval": 100,
   "gamaka": "sphurita",
   "params": {
-   "top": 500.0,
-   "bottom": 400.0
+   "top": 410.8,
+   "bottom": 313.8
   }
  },
  {
@@ -463,8 +463,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 500.0,
-   "bottom": 400.0
+   "top": 497.3,
+   "bottom": 418.7
   }
  },
  {
@@ -475,8 +475,8 @@
   "nextInterval": 100,
   "gamaka": "ahata",
   "params": {
-   "top": 500.0,
-   "bottom": 400.0
+   "top": 498.9,
+   "bottom": 430.0
   }
  },
  {
@@ -487,8 +487,8 @@
   "nextInterval": 100,
   "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 527.8,
+   "bottom": 405.2
   }
  },
  {
@@ -497,10 +497,10 @@
   "next": "M",
   "previousInterval": 500,
   "nextInterval": 100,
-  "gamaka": "sthira",
+  "gamaka": "orikai",
   "params": {
-   "top": 900.0,
-   "bottom": 400.0
+   "top": 496.5,
+   "bottom": 479.7
   }
  },
  {
@@ -509,10 +509,10 @@
   "next": "R",
   "previousInterval": -500,
   "nextInterval": -300,
-  "gamaka": "khandippu",
+  "gamaka": "sphurita",
   "params": {
-   "top": 500.0,
-   "bottom": 0.0
+   "top": 512.8,
+   "bottom": 424.1
   }
  },
  {
@@ -521,10 +521,10 @@
   "next": "D",
   "previousInterval": -300,
   "nextInterval": 400,
-  "gamaka": "janta",
+  "gamaka": "andola",
   "params": {
-   "top": 900.0,
-   "bottom": 200.0
+   "top": 550.0,
+   "bottom": 324.7
   }
  },
  {
@@ -535,8 +535,8 @@
   "nextInterval": -500,
   "gamaka": "pratyahata",
   "params": {
-   "top": 500.0,
-   "bottom": 0.0
+   "top": 515.3,
+   "bottom": 378.6
   }
  },
  {
@@ -547,8 +547,8 @@
   "nextInterval": -300,
   "gamaka": "janta",
   "params": {
-   "top": 500.0,
-   "bottom": 200.0
+   "top": 468.7,
+   "bottom": 429.2
   }
  },
  {
@@ -557,10 +557,10 @@
   "next": "P",
   "previousInterval": -100,
   "nextInterval": 200,
-  "gamaka": "orikai",
+  "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 484.2,
+   "bottom": 373.3
   }
  },
  {
@@ -571,8 +571,8 @@
   "nextInterval": 400,
   "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 400.0
+   "top": 481.1,
+   "bottom": 379.0
   }
  },
  {
@@ -581,10 +581,10 @@
   "next": "G",
   "previousInterval": 200,
   "nextInterval": -100,
-  "gamaka": "kampita",
+  "gamaka": "khandippu",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 572.4,
+   "bottom": 458.2
   }
  },
  {
@@ -595,8 +595,8 @@
   "nextInterval": 200,
   "gamaka": "andola",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 704.0,
+   "bottom": 407.5
   }
  },
  {
@@ -605,10 +605,10 @@
   "next": "D",
   "previousInterval": 200,
   "nextInterval": 400,
-  "gamaka": "jaru",
+  "gamaka": "nokku",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 630.1,
+   "bottom": 423.8
   }
  },
  {
@@ -617,10 +617,10 @@
   "next": "N",
   "previousInterval": 200,
   "nextInterval": 500,
-  "gamaka": "kampita",
+  "gamaka": "jaru",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 636.6,
+   "bottom": 430.0
   }
  },
  {
@@ -631,8 +631,8 @@
   "nextInterval": 200,
   "gamaka": "andola",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 892.2,
+   "bottom": 312.6
   }
  },
  {
@@ -643,8 +643,8 @@
   "nextInterval": 400,
   "gamaka": "jaru",
   "params": {
-   "top": 1000.0,
-   "bottom": 500.0
+   "top": 1197.5,
+   "bottom": 366.2
   }
  },
  {
@@ -653,10 +653,10 @@
   "next": "M",
   "previousInterval": -900,
   "nextInterval": -200,
-  "gamaka": "khandippu",
+  "gamaka": "vali",
   "params": {
-   "top": 700.0,
-   "bottom": -200.0
+   "top": 516.6,
+   "bottom": 190.5
   }
  },
  {
@@ -667,8 +667,8 @@
   "nextInterval": 200,
   "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 0.0
+   "top": 718.3,
+   "bottom": 582.0
   }
  },
  {
@@ -679,8 +679,8 @@
   "nextInterval": -200,
   "gamaka": "andola",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 703.3,
+   "bottom": 185.8
   }
  },
  {
@@ -689,10 +689,10 @@
   "next": "P",
   "previousInterval": -500,
   "nextInterval": 0,
-  "gamaka": "andola",
+  "gamaka": "sphurita",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 721.8,
+   "bottom": 186.1
   }
  },
  {
@@ -703,8 +703,8 @@
   "nextInterval": -900,
   "gamaka": "janta",
   "params": {
-   "top": 700.0,
-   "bottom": -200.0
+   "top": 707.0,
+   "bottom": 369.9
   }
  },
  {
@@ -715,8 +715,8 @@
   "nextInterval": -300,
   "gamaka": "pratyahata",
   "params": {
-   "top": 700.0,
-   "bottom": 400.0
+   "top": 719.5,
+   "bottom": 416.9
   }
  },
  {
@@ -725,10 +725,10 @@
   "next": "M",
   "previousInterval": -200,
   "nextInterval": -200,
-  "gamaka": "jaru",
+  "gamaka": "pratyahata",
   "params": {
-   "top": 700.0,
-   "bottom": 500.0
+   "top": 712.9,
+   "bottom": 369.0
   }
  },
  {
@@ -739,8 +739,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 700.0,
-   "bottom": 500.0
+   "top": 733.5,
+   "bottom": 423.2
   }
  },
  {
@@ -749,10 +749,10 @@
   "next": "D",
   "previousInterval": -200,
   "nextInterval": 200,
-  "gamaka": "jaru",
+  "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 727.9,
+   "bottom": 435.6
   }
  },
  {
@@ -763,8 +763,8 @@
   "nextInterval": 300,
   "gamaka": "jaru",
   "params": {
-   "top": 1000.0,
-   "bottom": 500.0
+   "top": 732.1,
+   "bottom": 128.8
   }
  },
  {
@@ -773,10 +773,10 @@
   "next": "R",
   "previousInterval": 0,
   "nextInterval": -500,
-  "gamaka": "andola",
+  "gamaka": "khandippu",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 873.1,
+   "bottom": 571.8
   }
  },
  {
@@ -787,8 +787,8 @@
   "nextInterval": -200,
   "gamaka": "jaru",
   "params": {
-   "top": 700.0,
-   "bottom": 500.0
+   "top": 725.2,
+   "bottom": 622.7
   }
  },
  {
@@ -797,10 +797,10 @@
   "next": "D",
   "previousInterval": 0,
   "nextInterval": 200,
-  "gamaka": "orikai",
+  "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 741.4,
+   "bottom": 692.6
   }
  },
  {
@@ -809,10 +809,10 @@
   "next": "R",
   "previousInterval": 200,
   "nextInterval": -500,
-  "gamaka": "sthira",
+  "gamaka": "orikai",
   "params": {
-   "top": 900.0,
-   "bottom": 200.0
+   "top": 713.5,
+   "bottom": 620.5
   }
  },
  {
@@ -821,10 +821,10 @@
   "next": "M",
   "previousInterval": 200,
   "nextInterval": -200,
-  "gamaka": "odukkal",
+  "gamaka": "andola",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 862.5,
+   "bottom": 604.4
   }
  },
  {
@@ -835,8 +835,8 @@
   "nextInterval": 0,
   "gamaka": "nokku",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 744.6,
+   "bottom": 702.8
   }
  },
  {
@@ -847,8 +847,8 @@
   "nextInterval": 200,
   "gamaka": "odukkal",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 877.2,
+   "bottom": 642.9
   }
  },
  {
@@ -859,8 +859,8 @@
   "nextInterval": 300,
   "gamaka": "odukkal",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 1261.1,
+   "bottom": 317.1
   }
  },
  {
@@ -871,8 +871,8 @@
   "nextInterval": -500,
   "gamaka": "jaru",
   "params": {
-   "top": 1200.0,
-   "bottom": 200.0
+   "top": 1210.9,
+   "bottom": 661.8
   }
  },
  {
@@ -883,8 +883,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 989.2,
+   "bottom": 825.9
   }
  },
  {
@@ -895,8 +895,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 1190.7,
+   "bottom": 667.9
   }
  },
  {
@@ -907,8 +907,8 @@
   "nextInterval": -200,
   "gamaka": "jaru",
   "params": {
-   "top": 900.0,
-   "bottom": 200.0
+   "top": 891.3,
+   "bottom": 298.6
   }
  },
  {
@@ -919,8 +919,8 @@
   "nextInterval": 100,
   "gamaka": "kampita",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 911.2,
+   "bottom": 727.3
   }
  },
  {
@@ -931,8 +931,8 @@
   "nextInterval": -200,
   "gamaka": "jaru",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 956.4,
+   "bottom": 430.5
   }
  },
  {
@@ -943,8 +943,8 @@
   "nextInterval": 0,
   "gamaka": "jaru",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 896.1,
+   "bottom": 464.3
   }
  },
  {
@@ -955,8 +955,8 @@
   "nextInterval": 100,
   "gamaka": "ahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 500.0
+   "top": 977.3,
+   "bottom": 583.5
   }
  },
  {
@@ -967,8 +967,8 @@
   "nextInterval": -400,
   "gamaka": "jaru",
   "params": {
-   "top": 900.0,
-   "bottom": 500.0
+   "top": 908.9,
+   "bottom": 662.9
   }
  },
  {
@@ -977,10 +977,10 @@
   "next": "P",
   "previousInterval": -200,
   "nextInterval": -200,
-  "gamaka": "janta",
+  "gamaka": "pratyahata",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 716.9,
+   "bottom": 620.7
   }
  },
  {
@@ -991,8 +991,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 951.9,
+   "bottom": 409.9
   }
  },
  {
@@ -1003,8 +1003,8 @@
   "nextInterval": 100,
   "gamaka": "ahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 926.7,
+   "bottom": 736.3
   }
  },
  {
@@ -1015,8 +1015,8 @@
   "nextInterval": -200,
   "gamaka": "janta",
   "params": {
-   "top": 900.0,
-   "bottom": 700.0
+   "top": 925.5,
+   "bottom": 800.5
   }
  },
  {
@@ -1027,8 +1027,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 900.0,
-   "bottom": 900.0
+   "top": 924.3,
+   "bottom": 774.2
   }
  },
  {
@@ -1039,8 +1039,8 @@
   "nextInterval": 100,
   "gamaka": "sthira",
   "params": {
-   "top": 1000.0,
-   "bottom": 900.0
+   "top": 906.1,
+   "bottom": 843.6
   }
  },
  {
@@ -1051,8 +1051,8 @@
   "nextInterval": -700,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 200.0
+   "top": 1076.1,
+   "bottom": 513.1
   }
  },
  {
@@ -1063,8 +1063,8 @@
   "nextInterval": -500,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 400.0
+   "top": 936.2,
+   "bottom": 861.8
   }
  },
  {
@@ -1075,8 +1075,8 @@
   "nextInterval": -400,
   "gamaka": "ravai",
   "params": {
-   "top": 1000.0,
-   "bottom": 500.0
+   "top": 1007.4,
+   "bottom": 900.0
   }
  },
  {
@@ -1087,8 +1087,8 @@
   "nextInterval": -200,
   "gamaka": "janta",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 951.3,
+   "bottom": 882.1
   }
  },
  {
@@ -1099,8 +1099,8 @@
   "nextInterval": 0,
   "gamaka": "kampita",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 937.9,
+   "bottom": 836.1
   }
  },
  {
@@ -1109,10 +1109,10 @@
   "next": "N",
   "previousInterval": 100,
   "nextInterval": 100,
-  "gamaka": "jaru",
+  "gamaka": "ahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 900.0
+   "top": 1091.4,
+   "bottom": 655.4
   }
  },
  {
@@ -1123,8 +1123,8 @@
   "nextInterval": -200,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 1266.8,
+   "bottom": 877.1
   }
  },
  {
@@ -1135,8 +1135,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 926.0,
+   "bottom": 429.2
   }
  },
  {
@@ -1147,8 +1147,8 @@
   "nextInterval": 100,
   "gamaka": "jaru",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1216.6,
+   "bottom": 913.1
   }
  },
  {
@@ -1159,8 +1159,8 @@
   "nextInterval": -200,
   "gamaka": "andola",
   "params": {
-   "top": 1000.0,
-   "bottom": 700.0
+   "top": 1257.6,
+   "bottom": 719.4
   }
  },
  {
@@ -1171,8 +1171,8 @@
   "nextInterval": 200,
   "gamaka": "orikai",
   "params": {
-   "top": 1200.0,
-   "bottom": 500.0
+   "top": 1211.1,
+   "bottom": 824.0
   }
  },
  {
@@ -1183,8 +1183,8 @@
   "nextInterval": -1000,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 0.0
+   "top": 718.0,
+   "bottom": 367.8
   }
  },
  {
@@ -1195,8 +1195,8 @@
   "nextInterval": 200,
   "gamaka": "janta",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 1222.5,
+   "bottom": 467.7
   }
  },
  {
@@ -1207,8 +1207,8 @@
   "nextInterval": 400,
   "gamaka": "ahata",
   "params": {
-   "top": 1400.0,
-   "bottom": 700.0
+   "top": 741.8,
+   "bottom": 524.5
   }
  },
  {
@@ -1217,10 +1217,10 @@
   "next": "S",
   "previousInterval": -100,
   "nextInterval": -1000,
-  "gamaka": "khandippu",
+  "gamaka": "pratyahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 0.0
+   "top": 1270.7,
+   "bottom": 901.7
   }
  },
  {
@@ -1231,8 +1231,8 @@
   "nextInterval": -500,
   "gamaka": "janta",
   "params": {
-   "top": 1000.0,
-   "bottom": 500.0
+   "top": 1228.8,
+   "bottom": 747.5
   }
  },
  {
@@ -1241,10 +1241,10 @@
   "next": "D",
   "previousInterval": -100,
   "nextInterval": -100,
-  "gamaka": "orikai",
+  "gamaka": "sphurita",
   "params": {
-   "top": 1000.0,
-   "bottom": 900.0
+   "top": 932.3,
+   "bottom": 887.9
   }
  },
  {
@@ -1255,8 +1255,8 @@
   "nextInterval": 0,
   "gamaka": "ahata",
   "params": {
-   "top": 1000.0,
-   "bottom": 900.0
+   "top": 1157.6,
+   "bottom": 777.1
   }
  },
  {
@@ -1267,8 +1267,8 @@
   "nextInterval": 200,
   "gamaka": "ahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1084.6,
+   "bottom": 880.2
   }
  },
  {
@@ -1279,8 +1279,8 @@
   "nextInterval": 200,
   "gamaka": "ahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 1000.0
+   "top": 1174.0,
+   "bottom": 937.2
   }
  },
  {
@@ -1291,8 +1291,8 @@
   "nextInterval": -100,
   "gamaka": "kampita",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1069.6,
+   "bottom": 704.8
   }
  },
  {
@@ -1301,10 +1301,10 @@
   "next": "S^",
   "previousInterval": 200,
   "nextInterval": 200,
-  "gamaka": "odukkal",
+  "gamaka": "andola",
   "params": {
-   "top": 1200.0,
-   "bottom": 1000.0
+   "top": 1227.3,
+   "bottom": 912.1
   }
  },
  {
@@ -1315,8 +1315,8 @@
   "nextInterval": 400,
   "gamaka": "andola",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1219.7,
+   "bottom": 904.4
   }
  },
  {
@@ -1327,8 +1327,8 @@
   "nextInterval": 200,
   "gamaka": "kampita",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1276.5,
+   "bottom": 906.5
   }
  },
  {
@@ -1339,8 +1339,8 @@
   "nextInterval": 400,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1435.0,
+   "bottom": 851.9
   }
  },
  {
@@ -1351,8 +1351,8 @@
   "nextInterval": -1200,
   "gamaka": "janta",
   "params": {
-   "top": 1200.0,
-   "bottom": 0.0
+   "top": 1296.8,
+   "bottom": 454.5
   }
  },
  {
@@ -1363,8 +1363,8 @@
   "nextInterval": -500,
   "gamaka": "ravai",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 1192.1,
+   "bottom": 996.9
   }
  },
  {
@@ -1373,10 +1373,10 @@
   "next": "D",
   "previousInterval": -200,
   "nextInterval": -300,
-  "gamaka": "pratyahata",
+  "gamaka": "janta",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1171.1,
+   "bottom": 981.8
   }
  },
  {
@@ -1385,10 +1385,10 @@
   "next": "N",
   "previousInterval": -200,
   "nextInterval": -200,
-  "gamaka": "ravai",
+  "gamaka": "andola",
   "params": {
-   "top": 1200.0,
-   "bottom": 1000.0
+   "top": 1232.5,
+   "bottom": 962.2
   }
  },
  {
@@ -1397,10 +1397,10 @@
   "next": "S^",
   "previousInterval": -200,
   "nextInterval": 0,
-  "gamaka": "janta",
+  "gamaka": "ahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 1000.0
+   "top": 1254.3,
+   "bottom": 844.9
   }
  },
  {
@@ -1411,8 +1411,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1202.1,
+   "bottom": 948.9
   }
  },
  {
@@ -1423,8 +1423,8 @@
   "nextInterval": -500,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 700.0
+   "top": 1216.3,
+   "bottom": 845.4
   }
  },
  {
@@ -1435,8 +1435,8 @@
   "nextInterval": -300,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1200.0,
-   "bottom": 900.0
+   "top": 1214.1,
+   "bottom": 1157.3
   }
  },
  {
@@ -1445,10 +1445,10 @@
   "next": "S^",
   "previousInterval": 0,
   "nextInterval": 0,
-  "gamaka": "khandippu",
+  "gamaka": "janta",
   "params": {
-   "top": 1200.0,
-   "bottom": 1200.0
+   "top": 1312.6,
+   "bottom": 896.2
   }
  },
  {
@@ -1457,10 +1457,10 @@
   "next": "D",
   "previousInterval": 200,
   "nextInterval": -300,
-  "gamaka": "tripuchcha",
+  "gamaka": "sphurita",
   "params": {
-   "top": 1400.0,
-   "bottom": 900.0
+   "top": 1289.2,
+   "bottom": 1113.0
   }
  },
  {
@@ -1471,8 +1471,8 @@
   "nextInterval": -200,
   "gamaka": "odukkal",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1294.6,
+   "bottom": 1171.1
   }
  },
  {
@@ -1483,8 +1483,8 @@
   "nextInterval": 0,
   "gamaka": "andola",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1726.3,
+   "bottom": 1158.8
   }
  },
  {
@@ -1495,8 +1495,8 @@
   "nextInterval": 200,
   "gamaka": "odukkal",
   "params": {
-   "top": 1400.0,
-   "bottom": 1200.0
+   "top": 1443.2,
+   "bottom": 1186.6
   }
  },
  {
@@ -1505,10 +1505,10 @@
   "next": "S^",
   "previousInterval": -400,
   "nextInterval": -200,
-  "gamaka": "ravai",
+  "gamaka": "janta",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1476.0,
+   "bottom": 912.2
   }
  },
  {
@@ -1519,8 +1519,8 @@
   "nextInterval": 0,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1657.8,
+   "bottom": 1139.9
   }
  },
  {
@@ -1531,8 +1531,8 @@
   "nextInterval": -500,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 900.0
+   "top": 1611.4,
+   "bottom": 1141.3
   }
  },
  {
@@ -1543,8 +1543,8 @@
   "nextInterval": -400,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1380.2,
+   "bottom": 1169.6
   }
  },
  {
@@ -1555,8 +1555,8 @@
   "nextInterval": -200,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1400.0,
-   "bottom": 1200.0
+   "top": 1402.8,
+   "bottom": 1189.8
   }
  },
  {
@@ -1567,8 +1567,8 @@
   "nextInterval": 0,
   "gamaka": "jaru",
   "params": {
-   "top": 1400.0,
-   "bottom": 1200.0
+   "top": 1477.5,
+   "bottom": 1125.6
   }
  },
  {
@@ -1579,8 +1579,8 @@
   "nextInterval": 200,
   "gamaka": "jaru",
   "params": {
-   "top": 1600.0,
-   "bottom": 1200.0
+   "top": 1487.2,
+   "bottom": 1157.5
   }
  },
  {
@@ -1591,8 +1591,8 @@
   "nextInterval": -400,
   "gamaka": "pratyahata",
   "params": {
-   "top": 1400.0,
-   "bottom": 1000.0
+   "top": 1499.2,
+   "bottom": 1286.1
   }
  },
  {
@@ -1603,8 +1603,8 @@
   "nextInterval": 200,
   "gamaka": "janta",
   "params": {
-   "top": 1600.0,
-   "bottom": 1400.0
+   "top": 1568.0,
+   "bottom": 1339.2
   }
  },
  {
@@ -1615,8 +1615,8 @@
   "nextInterval": -200,
   "gamaka": "khandippu",
   "params": {
-   "top": 1600.0,
-   "bottom": 1200.0
+   "top": 1649.5,
+   "bottom": 1421.8
   }
  },
  {
@@ -1627,8 +1627,8 @@
   "nextInterval": 200,
   "gamaka": "ahata",
   "params": {
-   "top": 1700.0,
-   "bottom": 1400.0
+   "top": 1647.5,
+   "bottom": 1440.8
   }
  },
  {
@@ -1637,10 +1637,10 @@
   "next": "R^",
   "previousInterval": -200,
   "nextInterval": -200,
-  "gamaka": "ravai",
+  "gamaka": "kampita",
   "params": {
-   "top": 1600.0,
-   "bottom": 1400.0
+   "top": 1595.3,
+   "bottom": 1419.3
   }
  },
  {
@@ -1651,8 +1651,8 @@
   "nextInterval": 100,
   "gamaka": "jaru",
   "params": {
-   "top": 1700.0,
-   "bottom": 1400.0
+   "top": 1624.8,
+   "bottom": 1374.8
   }
  },
  {
@@ -1661,10 +1661,10 @@
   "next": "R^",
   "previousInterval": -100,
   "nextInterval": -300,
-  "gamaka": "khandippu",
+  "gamaka": "orikai",
   "params": {
-   "top": 1700.0,
-   "bottom": 1400.0
+   "top": 1662.4,
+   "bottom": 1594.8
   }
  }
 ]

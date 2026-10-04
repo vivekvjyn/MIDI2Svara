@@ -1,6 +1,7 @@
 import json
 import os
 
+import librosa
 import numpy as np
 
 from . import scale, shapes
@@ -113,17 +114,14 @@ def pool(notes):
 
 
 def dtw(target, curves, band):
-    count, length = curves.shape
-    cost = np.abs(target[None, :, None] - curves[:, None, :])
-    dp = np.full((count, length + 1, length + 1), 1e18)
-    dp[:, 0, 0] = 0.0
-    for i in range(1, length + 1):
-        low = max(1, i - band)
-        high = min(length, i + band)
-        for j in range(low, high + 1):
-            dp[:, i, j] = cost[:, i - 1, j - 1] + np.minimum(
-                np.minimum(dp[:, i - 1, j], dp[:, i, j - 1]), dp[:, i - 1, j - 1])
-    return dp[:, length, length]
+    length = len(target)
+    costs = []
+    for curve in curves:
+        accumulated = librosa.sequence.dtw(
+            X=target[None, :], Y=curve[None, :],
+            band_rad=band / float(length), backtrack=False)
+        costs.append(accumulated[-1, -1])
+    return np.asarray(costs)
 
 
 def match(curve, beats, previous_interval, next_interval):
@@ -180,11 +178,6 @@ def raga(config, name, notes, output_dir, force, advance=None):
             curve, beats, previous_interval, next_interval = pooled
             gamaka = match(curve, beats, previous_interval, next_interval)
             here = positions[key[0]]
-            if gamaka in ("kampita", "andola", "vali"):
-                low, high = scale.neighbours(config, name, key[0])
-            else:
-                bounds = [here, here + previous_interval, here + next_interval]
-                low, high = min(bounds), max(bounds)
             rows.append({
                 "svara": key[0],
                 "previous": key[1],
@@ -192,8 +185,8 @@ def raga(config, name, notes, output_dir, force, advance=None):
                 "previousInterval": previous_interval,
                 "nextInterval": next_interval,
                 "gamaka": gamaka,
-                "params": {"top": round(high, 1),
-                           "bottom": round(low, 1)},
+                "params": {"top": round(here + float(np.max(curve)), 1),
+                           "bottom": round(here + float(np.min(curve)), 1)},
             })
         if advance is not None:
             advance(done, len(keys))

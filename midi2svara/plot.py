@@ -52,16 +52,6 @@ def ease(u, at, rate):
     return (raw - raw[0]) / (raw[-1] - raw[0])
 
 
-def split(axes, shown):
-    groups = {}
-    for lane, _ in shown:
-        groups.setdefault(int(np.floor(lane / 1200.0)), []).append(lane)
-    keys = sorted(groups)
-    for lower, upper in zip(keys, keys[1:]):
-        boundary = (max(groups[lower]) + min(groups[upper])) / 2.0
-        axes.axhline(boundary, color="#c3c2b7", linewidth=1.0, zorder=0)
-
-
 def curve(config, row, length, here, start=None):
     u = np.linspace(0.0, 1.0, 512)
     gamaka = row["gamaka"]
@@ -71,39 +61,53 @@ def curve(config, row, length, here, start=None):
     here = float(here)
     if start is None:
         start = here + float(row["previousInterval"])
+    start = min(max(float(start), bottom), top)
     up = top - here
     down = here - bottom
-    base = start + (here - start) * ease(u, 0.06, 40.0)
+    reach = 1.3 * {"ahata": 1.3, "pratyahata": 1.3, "andola": 1.3,
+                    "vali": 0.76, "khandippu": 0.78, "odukkal": 1.05,
+                    "kampita": 1.19, "ravai": 0.87, "orikai": 1.16,
+                    "tripuchcha": 0.59, "janta": 1.0}.get(gamaka, 1.0)
+    span = max(length, 1e-9)
+    slide = ease(u, 0.1 / span, 120.0 * span)
+    base = start + (here - start) * slide
+    cycles = max(1, int(round(3.0 * span)))
+    wobble = 10.0 * np.sin(2.0 * np.pi * cycles * u)
     if gamaka in ("sthira", "jaru", "nokku"):
-        return base
+        if gamaka == "jaru":
+            glide = ease(u, 0.55, 120.0 * span)
+            return start + (here - start) * glide + wobble
+        return base + wobble
     if gamaka in ("kampita", "andola", "vali"):
+        rates = {"kampita": 4.0, "andola": 1.5, "vali": 3.0}
         swing = {"kampita": shapes.kampita, "andola": shapes.andola,
-                 "vali": shapes.vali}[gamaka](length, top, bottom)[1]
-        window = np.sin(np.pi * u) ** 2
-        return base + window * (np.asarray(swing, dtype=float) - base)
+                 "vali": shapes.vali}[gamaka](
+                     length, here + reach * (top - here),
+                     here - reach * (here - bottom), rates[gamaka])[1]
+        window = np.sin(np.pi * u)
+        return base + window * (np.asarray(swing, dtype=float) - base) + wobble
     if gamaka == "sphurita":
-        shape = shapes.sphurita(length, down)[1]
+        shape = shapes.sphurita(length, down * reach)[1]
     elif gamaka == "tripuchcha":
-        shape = shapes.tripuchcha(length, down)[1]
+        shape = shapes.tripuchcha(length, down * reach)[1]
     elif gamaka == "ahata" or gamaka == "pratyahata":
-        reach = up if up > 0.0 else -down
-        shape = shapes.ahata(length, reach)[1]
+        shape = shapes.ahata(length, (up if up > 0.0 else down) * reach)[1]
     elif gamaka == "khandippu":
-        reach = -down if down > 0.0 else up
-        shape = shapes.khandippu(length, reach)[1]
+        shape = shapes.khandippu(length,
+                                 (-down if down > 0.0 else up) * reach)[1]
     elif gamaka == "odukkal":
-        reach = -down if down > 0.0 else up
-        shape = shapes.odukkal(length, reach)[1]
+        shape = shapes.odukkal(length,
+                               (-down if down > 0.0 else up) * reach)[1]
     elif gamaka == "janta":
-        reach = up if up >= down else -down
-        shape = shapes.janta(length, reach)[1]
+        shape = shapes.janta(length,
+                             (up if up >= down else -down) * reach)[1]
     elif gamaka == "orikai":
-        shape = shapes.orikai(length, up)[1]
+        shape = shapes.orikai(length, up * reach)[1]
     else:
-        shape = shapes.ravai(length, bottom - here)[1]
+        shape = shapes.ravai(length, (bottom - here) * reach)[1]
     shape = np.asarray(shape, dtype=float)
     gesture = shape - shape[0] * (1.0 - u) - shape[-1] * u
-    return base + gesture
+    return base + gesture + wobble
 
 
 def context(config, row):
@@ -150,7 +154,6 @@ def draw(axes, config, name, row, length):
              if low <= lane_ <= high]
     for lane_, _ in shown:
         axes.axhline(lane_, color=gridline, linewidth=lane, zorder=0)
-    split(axes, shown)
     for beat in range(int(length) + 1):
         axes.axvline(beat, color=gridline, linewidth=lane, zorder=0)
 

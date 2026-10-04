@@ -16,6 +16,10 @@ dependencies = [
     "rich",
     "matplotlib",
     "mir_eval",
+    "librosa",
+    "compiam",
+    "smart_open",
+    "torch",
 ]
 
 [project.scripts]
