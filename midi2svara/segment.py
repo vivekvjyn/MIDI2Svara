@@ -159,10 +159,9 @@ def recording(config, name, artist, annotation_file, pitch_file, tonic, tempo):
     return notes
 
 
-def raga(config, name, options, tonics, tempos, advance=None):
-    annotations_dir = options["annotationsDir"]
-    pitch_dir = options["pitchTracksDir"]
-    folder = os.path.join(options["cacheDir"], name)
+def raga(config, name, annotations_dir, pitch_dir, cache_dir, force, tonics,
+         tempos, advance=None):
+    folder = os.path.join(cache_dir, name)
     os.makedirs(folder, exist_ok=True)
     source = os.path.join(annotations_dir, name)
     files = sorted(f for f in os.listdir(source) if f.endswith(".tsv"))
@@ -174,7 +173,7 @@ def raga(config, name, options, tonics, tempos, advance=None):
     for done, artist in enumerate(artists, 1):
         cache = os.path.join(folder, artist + ".pkl")
         stored = None
-        if os.path.exists(cache) and not options["force"]:
+        if os.path.exists(cache) and not force:
             with open(cache, "rb") as handle:
                 cached = pickle.load(handle)
             if isinstance(cached, tuple) and len(cached) == 2 and cached[0] == 2:

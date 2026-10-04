@@ -17,6 +17,7 @@ from rich.table import Table
 from scipy.io import wavfile
 
 from . import plot, scale, synthesise
+from .nn import RagaNet
 
 
 def plain(text):
@@ -126,53 +127,34 @@ def table(summary):
     return panel
 
 
-class Block(torch.nn.Module):
-    def __init__(self, channels, kernel):
-        super().__init__()
-        self.conv_block1 = torch.nn.Sequential(
-            torch.nn.Conv1d(channels, channels, kernel_size=kernel,
-                            stride=1, padding="same"),
-            torch.nn.BatchNorm1d(channels),
-            torch.nn.ReLU(),
-        )
-        self.conv_block2 = torch.nn.Sequential(
-            torch.nn.Conv1d(channels, channels, kernel_size=3,
-                            stride=1, padding="same"),
-            torch.nn.BatchNorm1d(channels),
-            torch.nn.ReLU(),
-        )
-
-    def forward(self, identity):
-        x = self.conv_block1(identity)
-        x = self.conv_block2(x)
-        return x + identity
-
-
-class RagaNet(torch.nn.Module):
-    def __init__(self, params):
-        super().__init__()
-        channels = params["channels"]
-        self.conv_first = torch.nn.Sequential(
-            torch.nn.Conv1d(params["input"], channels, kernel_size=80,
-                            stride=params["stride"]),
-            torch.nn.BatchNorm1d(channels),
-            torch.nn.ReLU(),
-        )
-        self.res_blocks = torch.nn.ModuleList(
-            [Block(channels, 3) for _ in range(params["blocks"])])
-        self.fc1 = torch.nn.Linear(channels, params["classes"])
-        self.max_pool_every = params["poolEvery"]
-
-    def forward(self, x):
-        x = self.conv_first(x)
-        for index, block in enumerate(self.res_blocks):
-            x = block(x)
-            if index % self.max_pool_every == 0:
-                x = torch.nn.functional.max_pool1d(x, 2)
-        x = torch.nn.functional.avg_pool1d(x, x.shape[-1])
-        x = x.permute(0, 2, 1)
-        x = self.fc1(x)
-        return torch.nn.functional.log_softmax(x, dim=-1)
+def evaluation_table(ragas, samples, evaluation_dir):
+    panel = Table(title="lookup evaluation")
+    panel.add_column("raga")
+    panel.add_column("accuracy")
+    panel.add_column("identified as")
+    flat = []
+    for name in ragas:
+        folder = os.path.join(evaluation_dir, name)
+        predictions = []
+        for index in range(samples):
+            record = os.path.join(folder, f"{index}.json")
+            if not os.path.exists(record):
+                continue
+            with open(record) as handle:
+                predictions.append(json.load(handle)["raganet"])
+        flat.extend((name, value) for value in predictions)
+        counts = Counter(predictions)
+        hits = sum(1 for value in predictions
+                   if plain(value) == plain(name))
+        share = 100.0 * hits / max(len(predictions), 1)
+        listing = "  ".join(
+            f"{label}×{counts[label]}"
+            for label, _ in counts.most_common())
+        panel.add_row(name, f"{share:.1f}%", listing)
+    hits = sum(1 for name, value in flat if plain(value) == plain(name))
+    share = 100.0 * hits / max(len(flat), 1)
+    panel.add_row("all", f"{share:.1f}%", "-")
+    return panel
 
 
 def fetch(url, path):

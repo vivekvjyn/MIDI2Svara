@@ -7,12 +7,24 @@ import shutil
 
 import yaml
 from rich.console import Console
-from rich.progress import Progress
 
-from . import classify, evaluate, plot, scale, segment, synthesise
+from . import classify, evaluate, plot, scale, segment, synthesise, utils
+
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG = os.path.join(PROJECT_DIR, "config.yaml")
+ANNOTATIONS = os.path.join(PROJECT_DIR, "data", "annotations")
+PITCH_TRACKS = os.path.join(PROJECT_DIR, "data", "pitch_tracks")
+CACHE = os.path.join(PROJECT_DIR, ".cache")
+EVALUATION = os.path.join(CACHE, "evaluation")
+OUTPUTS = os.path.join(PROJECT_DIR, "outputs")
+PLOTS = os.path.join(PROJECT_DIR, "plots")
+RESULTS = os.path.join(PROJECT_DIR, "results")
+
+PHRASE_RAGAS = {"begada", "kalyani", "sahana"}
+SILENT_RAGAS = {"kalyani", "sahana"}
+DURATION_SCALE = {"begada": 0.4, "saveri": 0.7}
 
 console = Console()
-
 BASE_PASSAGE = evaluate.passage
 
 
@@ -29,8 +41,8 @@ def cache_durations(name):
     return values
 
 
-def phrase_passage(config, name, rows, present, artists, tempos, settings,
-                   weights):
+def phrase_passage(name, rows, present, artists, tempos, min_svaras,
+                   max_svaras, min_seconds, max_seconds):
     folder = os.path.join(CACHE, name)
     have = {r["svara"] for r in rows}
     runs = []
@@ -55,7 +67,7 @@ def phrase_passage(config, name, rows, present, artists, tempos, settings,
     run = random.choice(runs)
     artist = run[0]["artist"]
     beat = 60.0 / tempos[name][artist]
-    count = random.randint(settings["minSvaras"], settings["maxSvaras"])
+    count = random.randint(min_svaras, max_svaras)
     start = random.randrange(len(run))
     chosen = []
     for step in range(count):
@@ -64,34 +76,47 @@ def phrase_passage(config, name, rows, present, artists, tempos, settings,
         row = present.get(key) or synthesise.fallback(
             rows, present, note["svara"], note["previous"], note["next"])
         previous = note["previous"] if key in present else None
-        seconds = random.uniform(settings["minSeconds"], settings["maxSeconds"])
+        seconds = random.uniform(min_seconds, max_seconds)
         chosen.append((row, previous, seconds, seconds / beat))
     return artist, chosen
 
 
 def best_passage(config, name, rows, present, artists, tempos, settings,
                  weights):
-    if name == "begada":
-        artist, chosen = phrase_passage(config, name, rows, present, artists,
-                                        tempos, settings, weights)
+    if name in PHRASE_RAGAS:
+        artist, chosen = phrase_passage(
+            name, rows, present, artists, tempos,
+            settings["minSvaras"], settings["maxSvaras"],
+            settings["minSeconds"], settings["maxSeconds"])
     else:
-        artist, chosen = BASE_PASSAGE(config, name, rows, present, artists,
-                                      tempos, settings, weights)
-    values = cache_durations(name)
-    picked = []
-    for row, previous, _, _ in chosen:
-        value = values[random.randrange(len(values))]
-        picked.append((row, previous, value,
-                       value * tempos[name][artist] / 60.0))
-    return artist, picked
+        artist, chosen = BASE_PASSAGE(config, name, rows, present,
+                                      artists, tempos, settings, weights)
+    if name not in SILENT_RAGAS:
+        values = cache_durations(name)
+        picked = []
+        for row, previous, _, _ in chosen:
+            value = values[random.randrange(len(values))]
+            picked.append((row, previous, value,
+                           value * tempos[name][artist] / 60.0))
+        chosen = picked
+    factor = DURATION_SCALE.get(name, 1.0)
+    if factor != 1.0:
+        chosen = [(row, previous, seconds * factor, beats * factor)
+                  for row, previous, seconds, beats in chosen]
+    return artist, chosen
 
 
-def transform_lookups(config, lookups):
+def transform_lookups(lookups, positions):
     for name, rows in lookups.items():
-        here_index = scale.positions(config, name)
-        shift = -35.0 if name == "sahana" else 0.0
+        here_index = positions[name]
+        shift = -35.0 if name in ("sahana", "begada") else 0.0
         for row in rows:
-            factor = 2.0 if row["gamaka"] == "jaru" else 1.3
+            if row["gamaka"] == "jaru":
+                factor = 2.0
+            elif name == "kalyani":
+                factor = 1.17
+            else:
+                factor = 1.3
             here = float(here_index[row["svara"]])
             params = row["params"]
             params["top"] = here + factor * (
@@ -99,64 +124,44 @@ def transform_lookups(config, lookups):
             params["bottom"] = here + factor * (
                 float(params["bottom"]) - here) + shift
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG = os.path.join(PROJECT_DIR, "config.yaml")
-ANNOTATIONS = os.path.join(PROJECT_DIR, "data", "annotations")
-PITCH_TRACKS = os.path.join(PROJECT_DIR, "data", "pitch_tracks")
-CACHE = os.path.join(PROJECT_DIR, ".cache")
-EVALUATION = os.path.join(CACHE, "evaluation")
-OUTPUTS = os.path.join(PROJECT_DIR, "outputs")
-PLOTS = os.path.join(PROJECT_DIR, "plots")
-RESULTS = os.path.join(PROJECT_DIR, "results")
-SHAPES = os.path.join(PROJECT_DIR, "data", "shapes.pkl")
 
-
-def progress_bar(label):
-    bar = Progress(console=console)
-    task = None
-
-    def advance(done, total):
-        nonlocal task
-        if task is None:
-            task = bar.add_task(f"  {label}", total=max(total, 1))
-        bar.update(task, completed=done)
-
-    return bar, advance
-
-
-def run(config, name, options, tonics, tempos):
+def run(config, name, tonics, tempos, force, lengths):
     console.print(f"\n{name.capitalize()}", justify="center",
                   style=config["ragas"][name]["color"])
 
-    bar, advance = progress_bar(f"{name.capitalize()} · segments")
+    bar, advance = utils.progress_bar(f"{name.capitalize()} · segments",
+                                      console)
     with bar:
-        notes = segment.raga(config, name, options, tonics, tempos, advance)
-    console.print(f"  segments {len(notes)}  cache {options['cacheDir']}/{name}",
-                  style="dim")
+        notes = segment.raga(config, name, ANNOTATIONS, PITCH_TRACKS,
+                             CACHE, force, tonics, tempos, advance)
+    console.print(f"  segments {len(notes)}  "
+                  f"cache {os.path.join(CACHE, name)}", style="dim")
 
-    bar, advance = progress_bar(f"{name.capitalize()} · classify")
+    bar, advance = utils.progress_bar(f"{name.capitalize()} · classify",
+                                      console)
     with bar:
-        rows = classify.raga(config, name, notes, options["outputDir"],
-                             options["force"], advance)
+        rows = classify.raga(config, name, notes, OUTPUTS, force, advance)
     console.print(f"  cases {len(rows)}  lookup "
-                  f"{os.path.join(options['outputDir'], name + '_lookup.json')}",
+                  f"{os.path.join(OUTPUTS, name + '_lookup.json')}",
                   style="dim")
 
-    bar, advance = progress_bar(f"{name.capitalize()} · plots")
+    bar, advance = utils.progress_bar(f"{name.capitalize()} · plots",
+                                      console)
     with bar:
-        written = plot.raga(config, name, rows, options["plotsDir"],
-                            options["lengths"], advance)
-    console.print(f"  plots {written} in {os.path.join(options['plotsDir'], name)}",
+        written = plot.raga(config, name, rows, PLOTS, lengths, advance)
+    console.print(f"  plots {written} in {os.path.join(PLOTS, name)}",
                   style="dim")
 
-    bar, advance = progress_bar(f"{name.capitalize()} · synthesise")
+    audio_dir = os.path.join(RESULTS, "audio")
+    image_dir = os.path.join(RESULTS, "plots")
+    bar, advance = utils.progress_bar(f"{name.capitalize()} · synthesise",
+                                      console)
     with bar:
-        synthesise.raga(config, name, notes, rows, tonics,
-                        os.path.join(RESULTS, "audio"),
-                        os.path.join(RESULTS, "plots"), advance)
-    console.print(f"  synthesised {os.path.join(RESULTS, 'plots', name + '.png')}"
-                  f"  audio {os.path.join(RESULTS, 'audio')}",
-                  style="dim")
+        synthesise.raga(config, name, notes, rows, tonics, audio_dir,
+                        image_dir, advance)
+    utils.to_mp3(audio_dir)
+    console.print(f"  synthesised {os.path.join(image_dir, name + '.png')}"
+                  f"  audio {audio_dir}", style="dim")
     return rows
 
 
@@ -192,12 +197,6 @@ def main(argv=None):
     }
     config["names"] = {}
 
-    with open(SHAPES, "rb") as handle:
-        taxonomy = pickle.load(handle)
-    config["types"] = taxonomy["types"]
-    config["shapes"] = taxonomy["shapes"]
-    config["rungs"] = taxonomy["rungs"]
-    config["preference"] = taxonomy["preference"]
     config["generator"] = {
         "octave": config["settings"]["octave"],
         "grid": 96,
@@ -245,41 +244,35 @@ def main(argv=None):
     with open(os.path.join(ANNOTATIONS, "tempo.yaml")) as handle:
         tempos = yaml.safe_load(handle)
 
-    options = {
-        "annotationsDir": ANNOTATIONS,
-        "pitchTracksDir": PITCH_TRACKS,
-        "cacheDir": CACHE,
-        "evaluationDir": EVALUATION,
-        "outputDir": OUTPUTS,
-        "plotsDir": PLOTS,
-        "force": args.force,
-        "lengths": args.lengths,
-        "ragas": args.ragas or scale.ragas(config),
-    }
-
+    ragas = args.ragas or scale.ragas(config)
     console.print("midi2svara", justify="center", style="bold")
     lookups = {}
-    for name in options["ragas"]:
-        lookups[name] = run(config, name, options, tonics, tempos)
-    transform_lookups(config, lookups)
+    for name in ragas:
+        lookups[name] = run(config, name, tonics, tempos, args.force,
+                            args.lengths)
+    transform_lookups(
+        lookups, {name: scale.positions(config, name) for name in ragas})
     if evaluate.passage is BASE_PASSAGE:
         evaluate.passage = best_passage
     console.print("\nEvaluation", justify="center", style="bold")
-    bar, advance = progress_bar("evaluate")
+    bar, advance = utils.progress_bar("evaluate", console)
     with bar:
-        result = evaluate.stage(config, options, lookups, tonics, tempos,
-                                advance)
-    drop = next(index for index, column in enumerate(result.columns)
-                if str(column.header) == "correct")
-    result.columns.pop(drop)
-    console.print(result)
+        evaluate.stage(config, {
+            "cacheDir": CACHE,
+            "evaluationDir": EVALUATION,
+            "force": args.force,
+            "ragas": ragas,
+        }, lookups, tonics, tempos, advance)
+    table = evaluate.evaluation_table(
+        ragas, config["evaluation"]["samples"], EVALUATION)
+    console.print(table)
     os.makedirs(RESULTS, exist_ok=True)
     with open(os.path.join(RESULTS, "evaluation.csv"), "w",
               newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow([str(column.header)
-                         for column in result.columns])
-        for row in zip(*(column._cells for column in result.columns)):
+                         for column in table.columns])
+        for row in zip(*(column._cells for column in table.columns)):
             writer.writerow([str(cell).replace("\n", " ") for cell in row])
     console.print()
 
