@@ -1,9 +1,9 @@
 raga,accuracy,identified as
-abhogi,100.0%,Abhogi×20
-begada,45.0%,Begada×9  Kaanada×3  Sindhubhairavi×1  Darbar×1  Thodi×1  Dwijavanthi×1  Sahana×1  Charukesi×1  Sama×1  Behag×1
-kalyani,60.0%,Kalyani×12  Sindhubhairavi×2  Sahana×2  Hamirkalyani×1  Gowrimanohari×1  Charukesi×1  Sankarabharanam×1
-mohanam,95.0%,Mohanam×19  Valaji×1
+abhogi,95.0%,Abhogi×19  Valaji×1
+begada,35.0%,Begada×7  Bhairavi×4  Behag×2  Desh×2  Charukesi×2  Kaanada×1  Dwijavanthi×1  Thodi×1
+kalyani,55.0%,Kalyani×11  Sankarabharanam×5  Bhairavi×3  Sindhubhairavi×1
+mohanam,95.0%,Mohanam×19  Amrithavarshini×1
 sahana,100.0%,Sahana×20
-saveri,65.0%,Saveri×13  Amrithavarshini×4  Bhairavi×2  Sindhubhairavi×1
-sri,55.0%,Sri×11  Sankarabharanam×6  Sahana×2  Karaharapriya×1
-all,74.3%,-
+saveri,45.0%,Saveri×9  Amrithavarshini×3  Bhairavi×3  Mayamalavagowla×2  Bowli×1  Revagupthi×1  Kamalamanohari×1
+sri,20.0%,Sankarabharanam×11  Sri×4  Sindhubhairavi×1  Karaharapriya×1  Keeravani×1  Hamsanandi×1  Kambhoji×1
+all,63.6%,-

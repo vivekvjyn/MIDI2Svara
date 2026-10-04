@@ -245,8 +245,6 @@ def stage(config, options, lookups, tonics, tempos, advance=None):
         predictions = []
         for index in range(settings["samples"]):
             counter += 1
-            random.seed(settings["seed"] + counter)
-            np.random.seed((settings["seed"] + counter) % (1 << 32))
             record = os.path.join(folder, f"{index}.json")
             data = {}
             if os.path.exists(record) and not options["force"]:

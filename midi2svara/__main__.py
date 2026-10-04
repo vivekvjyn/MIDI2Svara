@@ -222,7 +222,6 @@ def main(argv=None):
         "minSeconds": 0.3,
         "maxSeconds": 0.6,
         "rate": 100.0,
-        "seed": 9173,
         "modelDir": os.path.join(CACHE, "models"),
         "raganet": {
             "checkpoint": (

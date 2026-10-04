@@ -1,0 +1,124 @@
+[mDefaulting to user installation because normal site-packages is not writeable
+[mObtaining file:///home/vivekv/Desktop/MIDI2Svara
+[m  Installing build dependencies ... done
+[m  Checking if build backend supports build_editable ... done
+[m  Getting requirements to build editable ... done
+[m  Preparing editable metadata (pyproject.toml) ... done
+[mRequirement already satisfied: numpy in /home/vivekv/.local/lib/python3.14/site-packages (from midi2
+[msvara==0.1.0) (2.5.3)
+[mRequirement already satisfied: pandas in /home/vivekv/.local/lib/python3.14/site-packages (from midi
+[m2svara==0.1.0) (3.0.6)
+[mRequirement already satisfied: scipy in /home/vivekv/.local/lib/python3.14/site-packages (from midi2
+[msvara==0.1.0) (1.18.1)
+[mRequirement already satisfied: PyYAML in /usr/lib64/python3.14/site-packages (from midi2svara==0.1.0
+[m) (6.0.3)
+[mRequirement already satisfied: rich in /home/vivekv/.local/lib/python3.14/site-packages (from midi2s
+[mvara==0.1.0) (15.0.0)
+[mRequirement already satisfied: matplotlib in /home/vivekv/.local/lib/python3.14/site-packages (from 
+[mmidi2svara==0.1.0) (3.11.2)
+[mRequirement already satisfied: mir_eval in /home/vivekv/.local/lib/python3.14/site-packages (from mi
+[mdi2svara==0.1.0) (0.8.2)
+[mRequirement already satisfied: librosa in /home/vivekv/.local/lib/python3.14/site-packages (from mid
+[mi2svara==0.1.0) (1.0.0)
+[mCollecting compiam (from midi2svara==0.1.0)
+[m  Using cached compiam-0.4.1-py3-none-any.whl.metadata (48 kB)
+[mRequirement already satisfied: smart_open in /home/vivekv/.local/lib/python3.14/site-packages (from 
+[mmidi2svara==0.1.0) (8.0.1)
+[mRequirement already satisfied: torch in /home/vivekv/.local/lib/python3.14/site-packages (from midi2
+[msvara==0.1.0) (2.14.0)
+[mRequirement already satisfied: attrs>=23.1.0 in /usr/lib/python3.14/site-packages (from compiam->mid
+[mi2svara==0.1.0) (25.4.0)
+[mCollecting numpy (from midi2svara==0.1.0)
+[m  Using cached numpy-1.26.4.tar.gz (15.8 MB)
+[m  Installing build dependencies ... done
+[m  Getting requirements to build wheel ... done
+[m  Preparing metadata (pyproject.toml) ... done
+[mRequirement already satisfied: joblib>=1.2.0 in /home/vivekv/.local/lib/python3.14/site-packages (fr
+[mom compiam->midi2svara==0.1.0) (1.6.0)
+[mCollecting pathlib~=1.0.1 (from compiam->midi2svara==0.1.0)
+[m  Using cached pathlib-1.0.1-py3-none-any.whl.metadata (5.1 kB)
+[mRequirement already satisfied: tqdm>=4.66.1 in /usr/lib/python3.14/site-packages (from compiam->midi
+[m2svara==0.1.0) (4.69.0)
+[mRequirement already satisfied: IPython>=7.34.0 in /home/vivekv/.local/lib/python3.14/site-packages (
+[mfrom compiam->midi2svara==0.1.0) (9.17.1)
+[mCollecting ipywidgets<8,>=7.0.0 (from compiam->midi2svara==0.1.0)
+[m  Using cached ipywidgets-7.8.5-py2.py3-none-any.whl.metadata (1.9 kB)
+[mRequirement already satisfied: Jinja2~=3.1.2 in /usr/lib/python3.14/site-packages (from compiam->mid
+[mi2svara==0.1.0) (3.1.6)
+[mRequirement already satisfied: configobj~=5.0.6 in /home/vivekv/.local/lib/python3.14/site-packages 
+[m(from compiam->midi2svara==0.1.0) (5.0.9)
+[mRequirement already satisfied: seaborn in /home/vivekv/.local/lib/python3.14/site-packages (from com
+[mpiam->midi2svara==0.1.0) (0.13.2)
+[mRequirement already satisfied: soundfile>=0.12.1 in /home/vivekv/.local/lib/python3.14/site-packages
+[m (from compiam->midi2svara==0.1.0) (0.14.0)
+[mCollecting scikit-learn~=1.5.2 (from compiam->midi2svara==0.1.0)
+[m  Using cached scikit_learn-1.5.2.tar.gz (7.0 MB)
+[m  Installing build dependencies ... done
+[m  Getting requirements to build wheel ... done
+[m  Preparing metadata (pyproject.toml) ... done
+[mCollecting scikit-image~=0.24.0 (from compiam->midi2svara==0.1.0)
+[m  Downloading scikit_image-0.24.0.tar.gz (22.7 MB)
+[m     [38:2:114:156:31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[39m [32m22.7/22.7 MB[39m [31m2.5 MB/s[39m  [33m0:00:09
+[m  Installing build dependencies ... done
+[m  Getting requirements to build wheel ... done
+[m  Preparing metadata (pyproject.toml) ... error
+[m  [22;1;31merror[22;39m: [22;1msubprocess-exited-with-error
+[m  
+[m  [31m×[39m [32mPreparing metadata [22;1m([22mpyproject.toml[22;1m)[22;39m did not run successfully.
+[m  [31m│[39m exit code: [22;1;36m1
+[m  [31m╰─>[39m [31m[972 lines of output]
+[m  [31m   [39m + meson setup /tmp/pip-install-0blz6m5g/scikit-image_cb393d93ede548678d3502e08e824d04 /tmp/pip
+[m-install-0blz6m5g/scikit-image_cb393d93ede548678d3502e08e824d04/.mesonpy-it3qv2hr -Dbuildtype=releas
+[me -Db_ndebug=if-release -Db_vscrt=md --native-file=/tmp/pip-install-0blz6m5g/scikit-image_cb393d93ed
+[me548678d3502e08e824d04/.mesonpy-it3qv2hr/meson-python-native-file.ini
+[m  [31m   [39m The Meson build system
+[m  [31m   [39m Version: 1.12.1
+[m  [31m   [39m Source dir: /tmp/pip-install-0blz6m5g/scikit-image_cb393d93ede548678d3502e08e824d04
+[m  [31m   [39m Build dir: /tmp/pip-install-0blz6m5g/scikit-image_cb393d93ede548678d3502e08e824d04/.mesonpy-it
+[m3qv2hr
+[m  [31m   [39m Build type: native build
+[m  [31m   [39m Project name: scikit-image
+[m  [31m   [39m Project version: 0.24.0
+[m  [31m   [39m C compiler for the host machine: cc (gcc 16.2.1 "cc (GCC) 16.2.1 20260819 (Red Hat 16.2.1-2)")
+[m  [31m   [39m C linker for the host machine: cc ld.bfd 16.2.1
+[m  [31m   [39m C++ compiler for the host machine: c++ (gcc 16.2.1 "c++ (GCC) 16.2.1 20260819 (Red Hat 16.2.1-
+[m2)")
+[m  [31m   [39m C++ linker for the host machine: c++ ld.bfd 16.2.1
+[m  [31m   [39m Host machine cpu family: x86_64
+[m  [31m   [39m Host machine cpu: x86_64
+[m  [31m   [39m Compiler for C supports arguments -Wno-unused-function: YES
+[m  [31m   [39m Library m found: YES
+[m  [31m   [39m Checking if "-Wl,--version-script" links: YES
+[m  [31m   [39m Program cython found: YES (/tmp/pip-build-env-gmdf6ff9/overlay/bin/cython)
+[m  [31m   [39m Program pythran found: YES (/tmp/pip-build-env-gmdf6ff9/overlay/bin/pythran)
+[m  [31m   [39m Program cp found: YES (/usr/bin/cp)
+[m  [31m   [39m Program python found: YES (/usr/bin/python3)
+[m  [31m   [39m Found pkg-config: YES (/usr/bin/pkg-config) 2.5.1
+[m  [31m   [39m Run-time dependency python found: YES 3.14
+[m  [31m   [39m Program _build_utils/cythoner.py found: YES (/tmp/pip-install-0blz6m5g/scikit-image_cb393d93ed
+[me548678d3502e08e824d04/skimage/_build_utils/cythoner.py)
+[m  [31m   [39m Compiler for C++ supports arguments -Wno-cpp: YES
+[m  [31m   [39m Run-time dependency python found: YES 3.14
+[m  [31m   [39m Build targets in project: 59
+[m  [31m   [39m 
+[m  [31m   [39m scikit-image 0.24.0
+[m  [31m   [39m 
+[m  [31m   [39m   User defined options
+[m  [31m   [39m     Native files: /tmp/pip-install-0blz6m5g/scikit-image_cb393d93ede548678d3502e08e824d04/.mes
+[monpy-it3qv2hr/meson-python-native-file.ini
+[m  [31m   [39m     b_ndebug    : if-release
+[m  [31m   [39m     b_vscrt     : md
+[m  [31m   [39m     buildtype   : release
+[m  [31m   [39m 
+[m  [31m   [39m Found ninja-1.13.2 at /usr/bin/ninja
+[m  [31m   [39m + /usr/bin/ninja
+[m  [31m   [39m [1/171] Generating skimage/morphology/_skeletonize_3d_cy with a custom command
+[m  [31m   [39m [2/171] Generating skimage/feature/_hessian_det_appx_pythran with a custom command
+[m  [31m   [39m [3/171] Generating skimage/feature/_brief_pythran with a custom command
+[m  [31m   [39m [4/171] Generating 'skimage/_shared/fast_exp.cpython-314-x86_64-linux-gnu.so.p/fast_exp.c'
+[m  [31m   [39m [5/171] Generating 'skimage/_shared/transform.cpython-314-x86_64-linux-gnu.so.p/transform.c'
+[m  [31m   [39m [6/171] Generating 'skimage/_shared/geometry.cpython-314-x86_64-linux-gnu.so.p/geometry.c'
+[m  [31m   [39m [7/171] Generating 'skimage/feature/censure_cy.cpython-314-x86_64-linux-gnu.so.p/censure_cy.c'
+[m  [31m   [39m [8/171] Generating 'skimage/feature/_canny_cy.cpython-314-x86_64-linux-gnu.so.p/_canny_cy.c'
+[m  [31m   [39m [9/171] Generating 'skimage/feature/_hoghistogram.cpython-314-x86_64-linux-gnu.so.p/_hoghistog
+[mram
