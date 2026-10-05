@@ -1,6 +1,5 @@
 #include "TimeRuler.h"
 
-
 TimeRuler::TimeRuler()
 {
     setSize(800, 25);

@@ -1,78 +1,35 @@
-#include "PluginEditor.h"
-
+#include "Editor.h"
 
 Editor::Editor(Processor& p)
     : AudioProcessorEditor(&p),
       audioProcessor(p),
-      pianoRoll(p.getNoteSequence()),
-      velocityLane(p.getNoteSequence())
+      pianoRoll(p.getNoteSequence())
 {
     setLookAndFeel(&lookAndFeel);
     setSize(1100, 650);
     setResizable(true, true);
     setResizeLimits(800, 500, 2000, 1200);
 
-    addAndMakeVisible(settingsPanel);
-    pianoRoll.setSettingsPanelRef(&settingsPanel);
+    setWantsKeyboardFocus(true);
+    tooltipWindow = std::make_unique<TooltipWindow>(this, 700);
 
-    toolbar.onToolChanged = [this](EditorToolbar::Tool t) { pianoRoll.setCurrentTool(t); };
-    toolbar.onSnapChanged = [this](EditorToolbar::SnapMode m) { pianoRoll.setSnapMode(m); };
-    toolbar.onGridDivisionChanged = [this](double beats) { pianoRoll.setGridDivision(beats); };
-    toolbar.onQuantizeClicked = [this] { pianoRoll.quantizeNotes(); };
-    toolbar.onEditModeChanged = [this](EditorToolbar::EditMode m) { pianoRoll.setPitchMode(m == EditorToolbar::EditMode::Pitch ? PianoRoll::PitchMode::Continuous : PianoRoll::PitchMode::Segmented); };
-    pianoRoll.setGridDivision(toolbar.getGridDivisionBeats());
-
-    toolbar.onFollowToggled = [this](bool on) { pianoRoll.setFollowEnabled(on); };
+    toolbar.onToolChanged = [this](::Toolbar::Tool t)
+    {
+        pianoRoll.setCurrentTool(t);
+    };
 
     toolbar.onMidiModeChanged = [this](int mode)
     {
-        if (mode == 0) audioProcessor.setMidiOutputMode(MidiEngine::Mode::MPE);
-        else audioProcessor.setMidiOutputMode(MidiEngine::Mode::Mono);
+        if (mode == 0) audioProcessor.setMidiOutputMode(MidiOut::Mode::MPE);
+        else audioProcessor.setMidiOutputMode(MidiOut::Mode::Mono);
     };
 
-    {
-        auto ragas = CarnaticEngine::getAvailableRagas();
-        settingsPanel.setRagas(ragas);
-        settingsPanel.setRagaMode(true);
-    }
+    toolbar.setMidiMode(audioProcessor.getMidiOutputMode() == MidiOut::Mode::MPE ? 0 : 1);
 
-    auto& rp = settingsPanel;
+    toolbar.setRagas(Engine::getAvailableRagas());
+    toolbar.onRefreshClicked = [this] { applyRagaSelection(true); };
 
-    rp.onRagaDone = [this](String ragaName)
-    {
-        bool stablePaSa = settingsPanel.isStablePaSaEnabled();
-        float pitchCorrection = settingsPanel.getPitchCorrection();
-        int rootNote = settingsPanel.getRootNote();
-        carnaticEngine.setRootNote(60 + rootNote);
-        if (carnaticEngine.loadRaga(ragaName))
-        {
-            auto& intervals = CarnaticEngine::getRagaIntervals();
-            auto it = intervals.find(ragaName);
-            if (it != intervals.end())
-            {
-                keyboard.setRootNote(60 + rootNote);
-                keyboard.setRagaIntervals(it->second);
-            }
-
-            carnaticEngine.applyExpression(audioProcessor.getNoteSequence(), stablePaSa, pitchCorrection);
-            repaint();
-        }
-        settingsPanel.resetToRagaMode();
-    };
-
-    rp.onRagaCancel = [this]
-    {
-        keyboard.clearRagaIntervals();
-        settingsPanel.resetToRagaMode();
-    };
-
-    rp.onPreviewClicked = [this](String) {};
-    rp.onAlgorithmChanged = [this](String) {};
-    rp.onIntensityChanged = [this](float) {};
-    rp.onCommitAsNotes = [this] { settingsPanel.resetToSelectionMode(); };
-    rp.onCommitAsContinuous = [this] { settingsPanel.resetToSelectionMode(); };
-    rp.onCommitRawAsContinuous = [this] { settingsPanel.resetToSelectionMode(); };
-    rp.onCancel = [this] { settingsPanel.resetToSelectionMode(); };
+    applyRagaSelection(false);
 
     addAndMakeVisible(toolbar);
 
@@ -108,23 +65,9 @@ Editor::Editor(Processor& p)
     {
         if (note != nullptr) triggerNotePlayback(note);
     };
-    pianoRoll.onNotesChanged = [this] { pianoRoll.repaint(); velocityLane.repaint(); };
+    pianoRoll.onNotesChanged = [this] { pianoRoll.repaint(); };
     pianoRoll.onViewChanged = [this] { syncViewRanges(); };
     addAndMakeVisible(pianoRoll);
-
-    pianoRoll.onActivated = [this] {};
-
-    velocityLane.onVelocityChanged = [this] { pianoRoll.repaint(); };
-    velocityLane.onUndoNeeded = [this] { pianoRoll.saveUndoState(); };
-    velocityLane.onResized = [this](int) { resized(); };
-    velocityLane.onMouseWheel = [this](const MouseEvent& e, const MouseWheelDetails& wheel)
-    {
-        pianoRoll.mouseWheelMove(e, wheel);
-    };
-    velocityLane.onAutoClosed = [this] {};
-    velocityLane.onLaneFocused = [this] {};
-    pianoRoll.onActivated = [this] {};
-    addAndMakeVisible(velocityLane);
 
     audioProcessor.onBeforeRecordingMerge = [this] { pianoRoll.saveUndoState(); };
     audioProcessor.onRecordingFinished = [this] { pianoRoll.repaint(); };
@@ -199,6 +142,11 @@ void Editor::triggerNotePlayback(NoteData* note)
 
 bool Editor::keyPressed(const KeyPress& key)
 {
+    if (key == KeyPress::spaceKey)
+    {
+        audioProcessor.setPlaying(!audioProcessor.isPlaying());
+        return true;
+    }
     if (key == KeyPress('a', ModifierKeys::commandModifier, 0))
     { pianoRoll.selectAll(); return true; }
     if (key == KeyPress('z', ModifierKeys::commandModifier, 0))
@@ -212,12 +160,37 @@ bool Editor::keyPressed(const KeyPress& key)
     if (key.getKeyCode() == KeyPress::downKey)
     { pianoRoll.transposeSelection(key.getModifiers().isShiftDown() ? -12 : -1); return true; }
     if (key.getTextCharacter() == 'e' || key.getTextCharacter() == 'E')
-    { pianoRoll.setCurrentTool(EditorToolbar::Tool::Edit); return true; }
+    { toolbar.setTool(::Toolbar::Tool::Edit); return true; }
     if (key.getTextCharacter() == 'p' || key.getTextCharacter() == 'P')
-    { pianoRoll.setCurrentTool(EditorToolbar::Tool::Pencil); return true; }
+    { toolbar.setTool(::Toolbar::Tool::Pencil); return true; }
     if (key.getTextCharacter() == 'v' || key.getTextCharacter() == 'V')
-    { pianoRoll.setCurrentTool(EditorToolbar::Tool::Vibrato); return true; }
+    { toolbar.setTool(::Toolbar::Tool::Vibrato); return true; }
+    if (key.getTextCharacter() == 'm' || key.getTextCharacter() == 'M')
+    { toolbar.setTool(::Toolbar::Tool::Move); return true; }
     return false;
+}
+
+void Editor::applyRagaSelection(bool withExpression)
+{
+    const String raga = toolbar.getSelectedRaga();
+    if (raga.isEmpty()) return;
+
+    const int rootNote = 60 + toolbar.getSelectedTonic();
+
+    const auto& intervals = Engine::getRagaIntervals();
+    auto it = intervals.find(raga);
+    if (it == intervals.end()) return;
+
+    engine.setRootNote(rootNote);
+
+    keyboard.setRootNote(rootNote);
+    keyboard.setRagaIntervals(it->second);
+    pianoRoll.setRagaScale(it->second, rootNote, Engine::getRagaVadi(raga));
+
+    if (withExpression && engine.loadRaga(raga))
+        engine.applyExpression(audioProcessor.getNoteSequence());
+
+    repaint();
 }
 
 void Editor::syncViewRanges()
@@ -228,7 +201,6 @@ void Editor::syncViewRanges()
     double highest = pianoRoll.getViewHighest();
     timeRuler.setViewRange(startBeat, endBeat);
     keyboard.setViewRange(lowest, highest);
-    velocityLane.setViewRange(startBeat, endBeat);
 }
 
 void Editor::paint(Graphics& g) { g.fillAll(FPColours::background); }
@@ -237,18 +209,11 @@ void Editor::resized()
 {
     auto area = getLocalBounds();
 
-    auto settingsArea = area.removeFromRight(expressionPanelWidth);
-    settingsPanel.setBounds(settingsArea);
-
     toolbar.setBounds(area.removeFromTop(toolbarHeight));
 
     auto rulerArea = area.removeFromTop(25);
     rulerArea.removeFromLeft(60);
     timeRuler.setBounds(rulerArea);
-
-    auto velArea = area.removeFromBottom(velocityLaneHeight);
-    velArea.removeFromLeft(60);
-    velocityLane.setBounds(velArea);
 
     auto keyboardArea = area.removeFromLeft(60);
     keyboard.setBounds(keyboardArea);

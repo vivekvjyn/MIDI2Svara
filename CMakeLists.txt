@@ -10,17 +10,12 @@ message(STATUS "Plugin Name: ${PROJECT_NAME}")
 message(STATUS "Version: ${CURRENT_VERSION}")
 message(STATUS "Plugin Code: ${CURRENT_PLUGIN_CODE}")
 
-# platform specific settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS version" FORCE)
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 endif()
 
 add_subdirectory(libs/JUCE)
-
-# ══════════════════════════════════════════════════
-# BinaryData: embed raga JSON resources
-# ══════════════════════════════════════════════════
 
 set(RAGA_NAMES abhogi begada kalyani mohanam sahana saveri sri)
 
@@ -36,17 +31,13 @@ juce_add_binary_data(RagaData
 
 target_compile_features(RagaData PRIVATE cxx_std_17)
 
-# ══════════════════════════════════════════════════
-# Main target: Instrument plugin (VST3 + AU + Standalone)
-# ══════════════════════════════════════════════════
-
 set(FORMATS Standalone VST3 AU)
 
-juce_add_plugin(FluidPitch2
+juce_add_plugin(MIDI2Svara
     VERSION ${CURRENT_VERSION}
-    COMPANY_NAME "Pitch Innovations"
-    BUNDLE_ID "com.pitchinnovations.FluidPitch2"
-    PLUGIN_MANUFACTURER_CODE PiIn
+    COMPANY_NAME "Coconut Audio"
+    BUNDLE_ID "com.coconutaudio.MIDI2Svara"
+    PLUGIN_MANUFACTURER_CODE CoAu
     PLUGIN_CODE ${CURRENT_PLUGIN_CODE}
     FORMATS ${FORMATS}
     PRODUCT_NAME "${PROJECT_NAME}"
@@ -58,34 +49,32 @@ juce_add_plugin(FluidPitch2
     COPY_PLUGIN_AFTER_BUILD TRUE
 )
 
-juce_generate_juce_header(FluidPitch2)
+juce_generate_juce_header(MIDI2Svara)
 
-target_sources(FluidPitch2
+target_sources(MIDI2Svara
     PRIVATE
-        src/PluginProcessor.cpp
-        src/PluginEditor.cpp
+        src/Processor.cpp
+        src/Editor.cpp
         src/dsp/PitchCurve.cpp
         src/midi/RecordingBuffer.cpp
-        src/io/PresetManager.cpp
-        src/dsp/CarnaticEngine.h
-        src/dsp/CarnaticEngine.cpp
-        src/midi/MidiEngine.cpp
+        src/dsp/Engine.h
+        src/dsp/Engine.cpp
+        src/dsp/Shapes.h
+        src/dsp/Shapes.cpp
+        src/midi/MidiOut.cpp
         src/ui/PianoRoll.cpp
         src/ui/Keyboard.cpp
         src/ui/TimeRuler.cpp
-        src/ui/EditorToolbar.cpp
-        src/ui/SettingsPanel.cpp
+        src/ui/Toolbar.cpp
         src/ui/NoteComponent.cpp
-        src/ui/CurveDrawing.cpp
-        src/ui/LookAndFeel.cpp
-        src/ui/VelocityLane.cpp)
+        src/ui/LookAndFeel.cpp)
 
-target_compile_features(FluidPitch2 PRIVATE cxx_std_17)
+target_compile_features(MIDI2Svara PRIVATE cxx_std_17)
 
-target_include_directories(FluidPitch2 PRIVATE
+target_include_directories(MIDI2Svara SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/libs/rapidjson/include)
 
-target_link_libraries(FluidPitch2
+target_link_libraries(MIDI2Svara
     PRIVATE
         RagaData
         juce::juce_audio_basics
@@ -106,36 +95,35 @@ target_link_libraries(FluidPitch2
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
 
-target_compile_definitions(FluidPitch2
+target_compile_definitions(MIDI2Svara
     PRIVATE
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0)
 
-# ══════════════════════════════════════════════════
-# Tests
-# ══════════════════════════════════════════════════
-
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 add_subdirectory(libs/googletest EXCLUDE_FROM_ALL)
 
-juce_add_console_app(CarnaticEngineTests PRODUCT_NAME "CarnaticEngineTests")
-juce_generate_juce_header(CarnaticEngineTests)
+juce_add_console_app(EngineTests PRODUCT_NAME "EngineTests")
+juce_generate_juce_header(EngineTests)
 
-target_sources(CarnaticEngineTests
+target_sources(EngineTests
     PRIVATE
-        tests/CarnaticEngineTests.cpp
-        src/dsp/CarnaticEngine.cpp
+        tests/EngineTests.cpp
+        src/dsp/Engine.cpp
+        src/dsp/Shapes.cpp
         src/dsp/PitchCurve.cpp)
 
-target_compile_features(CarnaticEngineTests PRIVATE cxx_std_17)
+target_compile_features(EngineTests PRIVATE cxx_std_17)
 
-target_include_directories(CarnaticEngineTests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
+target_include_directories(EngineTests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src)
+
+target_include_directories(EngineTests SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/libs/rapidjson/include)
 
-target_link_libraries(CarnaticEngineTests
+target_link_libraries(EngineTests
     PRIVATE
         RagaData
         GTest::gtest
@@ -148,14 +136,13 @@ target_link_libraries(CarnaticEngineTests
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
 
-target_compile_definitions(CarnaticEngineTests
+target_compile_definitions(EngineTests
     PRIVATE
         JUCE_STANDALONE_APPLICATION=1
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0)
 
 enable_testing()
-include(GoogleTest)
-gtest_discover_tests(CarnaticEngineTests
-    DISCOVERY_TIMEOUT 60
-    PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME EngineTests
+         COMMAND EngineTests
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

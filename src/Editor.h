@@ -1,18 +1,15 @@
 #pragma once
 #include <JuceHeader.h>
-#include "PluginProcessor.h"
+#include "Processor.h"
 #include "ui/LookAndFeel.h"
 #include "ui/PianoRoll.h"
 #include "ui/Keyboard.h"
 #include "ui/TimeRuler.h"
-#include "ui/EditorToolbar.h"
-#include "ui/VelocityLane.h"
-#include "ui/SettingsPanel.h"
-#include "dsp/CarnaticEngine.h"
+#include "ui/Toolbar.h"
+#include "dsp/Engine.h"
 
 class Editor : public AudioProcessorEditor,
-                          public Timer,
-                          public DragAndDropContainer
+                          public Timer
 {
 public:
     explicit Editor(Processor&);
@@ -27,22 +24,20 @@ private:
     Processor& audioProcessor;
     AppLookAndFeel lookAndFeel;
 
-    EditorToolbar toolbar;
+    ::Toolbar toolbar;
     TimeRuler timeRuler;
     Keyboard keyboard;
     PianoRoll pianoRoll;
-    VelocityLane velocityLane;
 
+    Engine engine;
 
-    CarnaticEngine carnaticEngine;
-    SettingsPanel settingsPanel;
+    std::unique_ptr<TooltipWindow> tooltipWindow;
 
     double playbackStartBeat = 0.0;
 
-    static constexpr int toolbarHeight = 36;
-    static constexpr int velocityLaneHeight = 120;
-    static constexpr int expressionPanelWidth = 180;
+    static constexpr int toolbarHeight = 40;
 
+    void applyRagaSelection(bool withExpression);
     void syncViewRanges();
     void triggerNotePlayback(NoteData* note);
 

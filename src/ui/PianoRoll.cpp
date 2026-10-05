@@ -1,21 +1,12 @@
 #include "PianoRoll.h"
-#include "../dsp/CarnaticEngine.h"
 #include <cmath>
-
 
 PianoRoll::PianoRoll(NoteSequence& notes) : noteSequence(notes)
 {
     setWantsKeyboardFocus(true);
-    startTimerHz(30);
 }
 
 PianoRoll::~PianoRoll() = default;
-
-void PianoRoll::timerCallback()
-{
-    if (curveDrawer.isDrawing())
-        repaint();
-}
 
 void PianoRoll::setViewRange(double startBeat, double endBeat, double lowest, double highest)
 {
@@ -23,6 +14,7 @@ void PianoRoll::setViewRange(double startBeat, double endBeat, double lowest, do
     viewEndBeat = endBeat;
     viewLowest = lowest;
     viewHighest = highest;
+    rowCacheValid = false;
     repaint();
 }
 
@@ -55,15 +47,9 @@ bool PianoRoll::updateFollow(double beat, bool )
     return false;
 }
 
-void PianoRoll::setCurrentTool(EditorToolbar::Tool tool)
+void PianoRoll::setCurrentTool(::Toolbar::Tool tool)
 {
     currentTool = tool;
-    if (tool == EditorToolbar::Tool::Pencil)
-        curveDrawer.setMode(CurveDrawing::Mode::Freehand);
-    else if (tool == EditorToolbar::Tool::Edit)
-        curveDrawer.setMode(CurveDrawing::Mode::ClickDraw);
-    else
-        curveDrawer.setMode(CurveDrawing::Mode::None);
     repaint();
 }
 
@@ -97,82 +83,6 @@ void PianoRoll::redo()
     repaint();
 }
 
-void PianoRoll::setGamakaStamp(const String& name, float intensity)
-{
-    gamakaStampName = name;
-    gamakaStampIntensity = intensity;
-
-    if (name.isNotEmpty())
-    {
-        auto points = PitchCurveInterpolator::generateGamaka(name, 0.0, 1.0, 1.0f);
-        if (!points.empty())
-        {
-            const int curW = 40, curH = 28;
-            Image curImg(Image::ARGB, curW, curH, true);
-            Graphics g(curImg);
-
-            float minP = 0.0f, maxP = 0.0f;
-            for (auto& p : points)
-            {
-                minP = std::min(minP, (float)p.pitchOffset);
-                maxP = std::max(maxP, (float)p.pitchOffset);
-            }
-            float range = std::max(maxP - minP, 0.5f);
-            float margin = range * 0.1f;
-            minP -= margin; maxP += margin;
-            range = maxP - minP;
-
-            g.setColour(FPColours::background.withAlpha(0.85f));
-            g.fillRoundedRectangle(0.0f, 0.0f, (float)curW, (float)curH, 4.0f);
-            g.setColour(FPColours::gamaka.withAlpha(0.5f));
-            g.drawRoundedRectangle(0.5f, 0.5f, (float)curW - 1.0f, (float)curH - 1.0f, 4.0f, 1.0f);
-
-            float zeroY = (float)curH - ((-minP) / range) * (float)curH;
-            g.setColour(FPColours::gridLine.withAlpha(0.4f));
-            g.drawHorizontalLine((int)zeroY, 3.0f, (float)curW - 3.0f);
-
-            Path path;
-            int steps = curW * 2;
-            float padX = 3.0f, padY = 3.0f;
-            float drawW = (float)curW - padX * 2.0f;
-            float drawH = (float)curH - padY * 2.0f;
-            for (int s = 0; s <= steps; ++s)
-            {
-                float t = (float)s / (float)steps;
-                float pitch = PitchCurveInterpolator::interpolate(points, (double)t, false);
-                float x = padX + t * drawW;
-                float y = padY + drawH - ((pitch - minP) / range) * drawH;
-                if (s == 0) path.startNewSubPath(x, y);
-                else path.lineTo(x, y);
-            }
-            g.setColour(FPColours::gamaka);
-            g.strokePath(path, PathStrokeType(1.8f));
-
-            expressionCursor = MouseCursor(curImg, 0, 0);
-        }
-    }
-    else
-    {
-        expressionCursor = MouseCursor::NormalCursor;
-    }
-    repaint();
-}
-
-std::vector<PitchPoint> PianoRoll::generateGamakaForNote(
-    const String& name, NoteData* note, float intensity) const
-{
-    double dur = note ? note->durationBeats : 1.0;
-    return PitchCurveInterpolator::generateGamaka(name, 0.0, dur, intensity);
-}
-
-void PianoRoll::clearExpressionStamp()
-{
-    gamakaStampName = {};
-    gamakaStampIntensity = 1.0f;
-    expressionCursor = MouseCursor::NormalCursor;
-    repaint();
-}
-
 bool PianoRoll::isInMultiSelection(NoteData* note, int pointIdx) const
 {
     for (auto& sel : multiSelection)
@@ -203,40 +113,6 @@ void PianoRoll::selectAll()
     if (!allNotes.empty())
         selectedNote = &allNotes[0];
 
-    repaint();
-}
-
-void PianoRoll::quantizeNotes()
-{
-    if (gridDivision <= 0.0) return;
-
-    std::vector<NoteData*> targets;
-    if (!multiSelection.empty())
-    {
-        for (const auto& sel : multiSelection)
-        {
-            if (sel.pointIndex == -1 && sel.note != nullptr)
-            {
-                if (std::find(targets.begin(), targets.end(), sel.note) == targets.end())
-                    targets.push_back(sel.note);
-            }
-        }
-    }
-    if (targets.empty())
-    {
-        auto& allNotes = noteSequence.getAllNotes();
-        for (auto& note : allNotes)
-            targets.push_back(&note);
-    }
-    if (targets.empty()) return;
-
-    saveUndoState();
-    for (auto* n : targets)
-    {
-        double snapped = std::round(n->startBeat / gridDivision) * gridDivision;
-        n->startBeat = jmax(0.0, snapped);
-    }
-    if (onNotesChanged) onNotesChanged();
     repaint();
 }
 
@@ -355,220 +231,11 @@ void PianoRoll::transposeSelection(int semitones)
     for (auto* note : notesToTranspose)
     {
         int newNote = jlimit(0, 127, note->noteNumber + semitones);
+        if (!isNoteInRaga(newNote)) continue;
+        if (overlapsOtherNote(note, note->startBeat, note->getEndBeat(), newNote)) continue;
         note->noteNumber = newNote;
     }
 
-    if (onNotesChanged) onNotesChanged();
-    repaint();
-}
-
-void PianoRoll::simplifySelection()
-{
-    if (multiSelection.empty()) return;
-
-    std::map<NoteData*, std::vector<int>> noteIndices;
-    for (auto& sel : multiSelection)
-    {
-        if (sel.pointIndex >= 0)
-            noteIndices[sel.note].push_back(sel.pointIndex);
-    }
-
-    if (noteIndices.empty()) return;
-    saveUndoState();
-
-    for (auto& [note, indices] : noteIndices)
-    {
-        if (indices.size() < 3) continue;
-        std::sort(indices.begin(), indices.end());
-
-        int startIdx = indices.front();
-        int endIdx = indices.back();
-
-        PitchCurveInterpolator::simplifyRange(note->pitchCurve, startIdx, endIdx, 0.05f);
-    }
-
-    clearMultiSelection();
-    if (onNotesChanged) onNotesChanged();
-    repaint();
-}
-
-void PianoRoll::smoothSelection()
-{
-    smoothSelection(0.6f);
-}
-
-void PianoRoll::smoothSelection(float intensity)
-{
-    if (multiSelection.empty()) return;
-
-    std::map<NoteData*, std::vector<int>> noteIndices;
-    for (auto& sel : multiSelection)
-    {
-        if (sel.pointIndex >= 0)
-            noteIndices[sel.note].push_back(sel.pointIndex);
-    }
-
-    if (noteIndices.empty()) return;
-    saveUndoState();
-
-    for (auto& [note, indices] : noteIndices)
-    {
-        if (indices.size() < 3) continue;
-        std::sort(indices.begin(), indices.end());
-        PitchCurveInterpolator::smoothRange(note->pitchCurve, indices.front(), indices.back(), intensity);
-    }
-
-    if (onNotesChanged) onNotesChanged();
-    repaint();
-}
-
-void PianoRoll::smoothPreviewBegin()
-{
-    if (multiSelection.empty()) return;
-    smoothPreviewActive = true;
-    smoothSnapshots.clear();
-
-    std::set<NoteData*> seen;
-    for (auto& sel : multiSelection)
-    {
-        if (sel.pointIndex >= 0 && seen.insert(sel.note).second)
-            smoothSnapshots.push_back({ sel.note, sel.note->pitchCurve });
-    }
-
-    saveUndoState();
-}
-
-void PianoRoll::smoothPreviewUpdate(float intensity)
-{
-    if (!smoothPreviewActive || smoothSnapshots.empty()) return;
-
-    std::map<NoteData*, std::vector<int>> noteIndices;
-    for (auto& sel : multiSelection)
-    {
-        if (sel.pointIndex >= 0)
-            noteIndices[sel.note].push_back(sel.pointIndex);
-    }
-
-    for (auto& snap : smoothSnapshots)
-    {
-        snap.note->pitchCurve = snap.originalCurve;
-
-        auto it = noteIndices.find(snap.note);
-        if (it != noteIndices.end() && it->second.size() >= 3)
-        {
-            auto& indices = it->second;
-            std::sort(indices.begin(), indices.end());
-            PitchCurveInterpolator::smoothRange(snap.note->pitchCurve,
-                                                 indices.front(), indices.back(), intensity);
-        }
-    }
-
-    if (onNotesChanged) onNotesChanged();
-    repaint();
-}
-
-void PianoRoll::smoothPreviewCommit()
-{
-    
-    smoothPreviewActive = false;
-    smoothSnapshots.clear();
-}
-
-void PianoRoll::smoothPreviewCancel()
-{
-    if (!smoothPreviewActive) return;
-
-    for (auto& snap : smoothSnapshots)
-        snap.note->pitchCurve = snap.originalCurve;
-
-    smoothPreviewActive = false;
-    smoothSnapshots.clear();
-
-    if (onNotesChanged) onNotesChanged();
-    repaint();
-}
-
-void PianoRoll::mergeSelectedNotes()
-{
-    
-    std::vector<NoteData*> targets;
-    std::set<NoteData*> seen;
-    for (auto& sel : multiSelection)
-    {
-        if (sel.note && sel.pointIndex < 0 && seen.insert(sel.note).second)
-            targets.push_back(sel.note);
-    }
-    if (targets.size() < 2) return;
-
-    saveUndoState();
-
-    std::sort(targets.begin(), targets.end(),
-        [](NoteData* a, NoteData* b) { return a->startBeat < b->startBeat; });
-
-    double earliest = targets.front()->startBeat;
-    double latest = targets.front()->getEndBeat();
-    int lowestNote = targets.front()->noteNumber;
-
-    for (auto* n : targets)
-    {
-        latest = std::max(latest, n->getEndBeat());
-        lowestNote = std::min(lowestNote, n->noteNumber);
-    }
-
-    std::vector<PitchPoint> mergedCurve;
-    for (auto* n : targets)
-    {
-        float semitoneOffset = (float)(n->noteNumber - lowestNote);
-
-        if (n->pitchCurve.empty())
-        {
-            
-            PitchPoint p;
-            p.time = n->startBeat - earliest;
-            p.pitchOffset = (double)semitoneOffset;
-            p.curveType = PitchPoint::CurveType::Linear;
-            mergedCurve.push_back(p);
-
-            p.time = n->getEndBeat() - earliest;
-            mergedCurve.push_back(p);
-        }
-        else
-        {
-            for (auto& pt : n->pitchCurve)
-            {
-                PitchPoint mp;
-                mp.time = (n->startBeat - earliest) + pt.time;
-                mp.pitchOffset = pt.pitchOffset + (double)semitoneOffset;
-                mp.curveType = pt.curveType;
-                mp.curvature = pt.curvature;
-                mp.bias = pt.bias;
-                mergedCurve.push_back(mp);
-            }
-        }
-    }
-
-    std::sort(mergedCurve.begin(), mergedCurve.end(),
-        [](const PitchPoint& a, const PitchPoint& b) { return a.time < b.time; });
-
-    NoteData* keeper = targets[0];
-    for (size_t i = 1; i < targets.size(); ++i)
-    {
-        for (int j = 0; j < noteSequence.getNumNotes(); ++j)
-        {
-            if (&noteSequence.getNote(j) == targets[i])
-            {
-                noteSequence.removeNote(j);
-                break;
-            }
-        }
-    }
-
-    keeper->noteNumber = lowestNote;
-    keeper->startBeat = earliest;
-    keeper->durationBeats = latest - earliest;
-    keeper->pitchCurve = std::move(mergedCurve);
-
-    multiSelection.clear();
     if (onNotesChanged) onNotesChanged();
     repaint();
 }
@@ -588,44 +255,153 @@ float PianoRoll::xForBeat(double beat) const
 
 int PianoRoll::noteAtY(float y) const
 {
-    double noteRange = viewHighest - viewLowest;
-    if (noteRange <= 0.0) return (int)viewLowest;
-    return (int)(viewHighest - (double)y / (double)getHeight() * noteRange);
+    auto& rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || getHeight() <= 0) return (int)viewLowest;
+
+    float rh = (float)getHeight() / (float)count;
+    int idx = count - 1 - (int)(y / rh);
+    return rows[(size_t)jlimit(0, count - 1, idx)];
 }
 
 float PianoRoll::yForNote(double note) const
 {
-    double noteRange = viewHighest - viewLowest;
-    if (noteRange <= 0.0) return 0.0f;
-    return (float)((viewHighest - note) / noteRange * (double)getHeight());
+    auto& rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || getHeight() <= 0) return 0.0f;
+
+    float rh = (float)getHeight() / (float)count;
+    int key = (int)std::ceil(note);
+
+    if (key > rows.back()) return 0.0f;
+    if (key < rows.front()) return (float)getHeight() + rh;
+
+    auto it = std::lower_bound(rows.begin(), rows.end(), key);
+    int idx = (int)(it - rows.begin());
+    if (idx >= count) return 0.0f;
+    return (float)(count - idx) * rh;
 }
 
-float PianoRoll::getPixelsPerSemitone() const
+float PianoRoll::yForCents(double cents) const
 {
-    double noteRange = viewHighest - viewLowest;
-    if (noteRange <= 0.0) return 16.0f;
-    return (float)((double)getHeight() / noteRange);
+    auto& rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || getHeight() <= 0) return 0.0f;
+
+    float rh = rowHeight();
+    auto centreY = [count, rh](int idx) { return (float)(count - idx) * rh - rh * 0.5f; };
+    auto centsOf = [this, &rows](int idx) { return (double)(rows[(size_t)idx] - ragaRootMidi) * 100.0; };
+
+    if (count == 1) return centreY(0);
+
+    int i = 0;
+    while (i + 1 < count && centsOf(i + 1) <= cents) ++i;
+    if (i + 1 >= count) i = count - 2;
+
+    double cA = centsOf(i);
+    double cB = centsOf(i + 1);
+    float yA = centreY(i);
+    float yB = centreY(i + 1);
+    if (cB <= cA) return yA;
+
+    return (float)(yA + (yB - yA) * ((cents - cA) / (cB - cA)));
+}
+
+double PianoRoll::centsAtY(float y) const
+{
+    auto& rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || getHeight() <= 0) return 0.0;
+
+    float rh = rowHeight();
+    auto centreY = [count, rh](int idx) { return (float)(count - idx) * rh - rh * 0.5f; };
+    auto centsOf = [this, &rows](int idx) { return (double)(rows[(size_t)idx] - ragaRootMidi) * 100.0; };
+
+    if (count == 1) return centsOf(0);
+
+    int i = 0;
+    while (i + 1 < count && centreY(i + 1) > y) ++i;
+    if (i + 1 >= count) i = count - 2;
+
+    float yA = centreY(i);
+    float yB = centreY(i + 1);
+    if (yB >= yA) return centsOf(i);
+
+    return centsOf(i) + (centsOf(i + 1) - centsOf(i)) * ((double)(y - yA) / (double)(yB - yA));
+}
+
+float PianoRoll::yForNoteOffset(double noteNumber, float offset) const
+{
+    return yForCents((noteNumber - (double)ragaRootMidi) * 100.0 + (double)offset * 100.0);
+}
+
+float PianoRoll::noteOffsetAtY(double noteNumber, float y) const
+{
+    return (float)(((noteNumber - (double)ragaRootMidi) * 100.0 - centsAtY(y)) / 100.0);
+}
+
+const std::vector<int>& PianoRoll::ragaRows() const
+{
+    if (!rowCacheValid)
+    {
+        rowCache.clear();
+
+        int lo = (int)std::floor(viewLowest);
+        int hi = (int)std::ceil(viewHighest);
+
+        for (int n = lo; n <= hi; ++n)
+            if (isNoteInRaga(n))
+                rowCache.push_back(n);
+
+        if (rowCache.empty())
+            for (int n = lo; n <= hi; ++n)
+                rowCache.push_back(n);
+
+        rowCacheValid = true;
+    }
+    return rowCache;
+}
+
+float PianoRoll::rowHeight() const
+{
+    int count = (int)ragaRows().size();
+    if (count == 0 || getHeight() <= 0) return 16.0f;
+    return (float)getHeight() / (float)count;
+}
+
+float PianoRoll::rowTopY(int note) const
+{
+    return yForNote((double)note) - rowHeight();
+}
+
+bool PianoRoll::overlapsOtherNote(const NoteData* self, double startBeat,
+                                  double endBeat, int noteNumber) const
+{
+    for (auto& n : noteSequence.getAllNotes())
+    {
+        if (&n == self) continue;
+        if (n.noteNumber != noteNumber) continue;
+        if (startBeat < n.getEndBeat() - 1.0e-9 && n.startBeat < endBeat - 1.0e-9)
+            return true;
+    }
+    return false;
 }
 
 Rectangle<float> PianoRoll::boundsForNote(const NoteData& note) const
 {
+    if (!isNoteInRaga(note.noteNumber))
+        return { 1.0e6f, 0.0f, 0.0f, 0.0f };
+
     float x = xForBeat(note.startBeat);
     float w = xForBeat(note.getEndBeat()) - x;
-    float y = yForNote(note.noteNumber + 1);
-    float h = getPixelsPerSemitone();
-    return { x, y, jmax(4.0f, w), jmax(4.0f, h) };
-}
-
-float PianoRoll::snapPitch(float pitch) const
-{
-    if (snapMode == EditorToolbar::SnapMode::Grid)
-        return std::round(pitch);
-    return pitch;
+    float y = rowTopY(note.noteNumber);
+    float h = rowHeight();
+    return { x, y, jmax(4.0f, w), h };
 }
 
 double PianoRoll::snapBeat(double beat) const
 {
-    if (snapMode == EditorToolbar::SnapMode::Grid && gridDivision > 0.0)
+    if (snapToGrid && gridDivision > 0.0)
         return std::round(beat / gridDivision) * gridDivision;
     return beat;
 }
@@ -646,14 +422,13 @@ int PianoRoll::findControlPointAt(NoteData* note, float x, float y)
     if (note == nullptr) return -1;
 
     auto bounds = boundsForNote(*note);
-    float pps = getPixelsPerSemitone();
     float hitRadius = 8.0f;
 
     for (int i = 0; i < (int)note->pitchCurve.size(); ++i)
     {
         auto& pt = note->pitchCurve[(size_t)i];
         float px = bounds.getX() + (float)(pt.time / note->durationBeats) * bounds.getWidth();
-        float py = bounds.getCentreY() - (float)pt.pitchOffset * pps;
+        float py = yForNoteOffset(note->noteNumber, (float)pt.pitchOffset);
         float dx = x - px;
         float dy = y - py;
         if (dx * dx + dy * dy < hitRadius * hitRadius)
@@ -664,7 +439,6 @@ int PianoRoll::findControlPointAt(NoteData* note, float x, float y)
 
 bool PianoRoll::findAnyControlPoint(float x, float y, NoteData*& outNote, int& outIndex)
 {
-    float pps = getPixelsPerSemitone();
     float hitRadius = 8.0f;
     float bestDist = hitRadius * hitRadius;
 
@@ -682,7 +456,7 @@ bool PianoRoll::findAnyControlPoint(float x, float y, NoteData*& outNote, int& o
         {
             auto& pt = note.pitchCurve[(size_t)i];
             float px = bounds.getX() + (float)(pt.time / note.durationBeats) * bounds.getWidth();
-            float py = bounds.getCentreY() - (float)pt.pitchOffset * pps;
+            float py = yForNoteOffset(note.noteNumber, (float)pt.pitchOffset);
             float dx = x - px;
             float dy = y - py;
             float dist = dx * dx + dy * dy;
@@ -700,7 +474,7 @@ bool PianoRoll::findAnyControlPoint(float x, float y, NoteData*& outNote, int& o
 
 bool PianoRoll::findCurveSegmentWithDistance(float mx, float my, NoteData*& outNote, int& outSegIndex, float& outDist)
 {
-    float hitDist = 32.0f;  
+    float hitDist = 32.0f;
     float bestDist = hitDist;
     outNote = nullptr;
     outSegIndex = -1;
@@ -714,7 +488,6 @@ bool PianoRoll::findCurveSegmentWithDistance(float mx, float my, NoteData*& outN
         if (bounds.getRight() < 0 || bounds.getX() > getWidth()) continue;
         if (mx < bounds.getX() - 10 || mx > bounds.getRight() + 10) continue;
 
-        float pps = getPixelsPerSemitone();
         float noteW = bounds.getWidth();
         float dur = (float)note.durationBeats;
 
@@ -733,7 +506,7 @@ bool PianoRoll::findCurveSegmentWithDistance(float mx, float my, NoteData*& outN
             double time = ptA.time + t * (ptB.time - ptA.time);
             float pitchAtMouse = PitchCurveInterpolator::interpolate(note.pitchCurve, time);
 
-            float curveY = bounds.getCentreY() - pitchAtMouse * pps;
+            float curveY = yForNoteOffset(note.noteNumber, pitchAtMouse);
             float dist = std::abs(my - curveY);
 
             if (dist < bestDist)
@@ -752,25 +525,15 @@ bool PianoRoll::findCurveSegmentAt(float mx, float my, NoteData*& outNote, int& 
 {
     float dist = 0.0f;
     bool found = findCurveSegmentWithDistance(mx, my, outNote, outSegIndex, dist);
-    return found && dist < 28.0f;  
-}
-
-bool PianoRoll::isInHandle(const NoteData& note, float mx, float my) const
-{
-    auto bounds = boundsForNote(note);
-    float handleTop = bounds.getY();
-    float handleBottom = bounds.getY() + handleHeight;
-    return mx >= bounds.getX() - 2 && mx <= bounds.getRight() + 2
-        && my >= handleTop - 2 && my <= handleBottom;
+    return found && dist < 28.0f;
 }
 
 bool PianoRoll::isNearHandle(const NoteData& note, float mx, float my, float proximity) const
 {
     auto bounds = boundsForNote(note);
-    float handleTop = bounds.getY();
-    float handleBottom = bounds.getY() + handleHeight;
-    return mx >= bounds.getX() - 2 && mx <= bounds.getRight() + 2
-        && my >= handleTop - proximity && my <= handleBottom + proximity;
+    if (bounds.getX() > 1.0e5f) return false;
+    return mx >= bounds.getX() - proximity && mx <= bounds.getRight() + proximity
+        && my >= bounds.getY() - proximity && my <= bounds.getBottom() + proximity;
 }
 
 PianoRoll::VibHandlePositions PianoRoll::getVibHandlePositions(const NoteData& note, int segIdx) const
@@ -780,24 +543,23 @@ PianoRoll::VibHandlePositions PianoRoll::getVibHandlePositions(const NoteData& n
     auto& vib = ptA.vibrato;
 
     auto bounds = boundsForNote(note);
-    float pps = getPixelsPerSemitone();
     float dur = (float)note.durationBeats;
     float noteW = bounds.getWidth();
     float xA = bounds.getX() + (float)(ptA.time / dur) * noteW;
     float xB = bounds.getX() + (float)(ptB.time / dur) * noteW;
 
-    auto posAt = [&](float frac) -> Point<float> {
+    auto posAt = [&](float frac, float pitchAdd = 0.0f) -> Point<float> {
         float x = xA + frac * (xB - xA);
         double time = ptA.time + frac * (ptB.time - ptA.time);
         float basePitch = PitchCurveInterpolator::interpolate(note.pitchCurve, time, false);
-        float y = bounds.getCentreY() - basePitch * pps;
+        float y = yForNoteOffset(note.noteNumber, basePitch + pitchAdd);
         return { x, y };
     };
 
     VibHandlePositions h;
 
     auto depthPos = posAt(0.18f);
-    h.depth = { depthPos.x, depthPos.y - vib.depth * pps };
+    h.depth = { depthPos.x, posAt(0.18f, vib.depth).y };
 
     h.rate = posAt(0.5f);
 
@@ -806,7 +568,7 @@ PianoRoll::VibHandlePositions PianoRoll::getVibHandlePositions(const NoteData& n
     h.fadeOut = posAt(jmin(0.98f, 1.0f - vib.fadeOutFrac));
 
     auto offsetPos = posAt(0.75f);
-    h.offset = { offsetPos.x, offsetPos.y - vib.offset * pps };
+    h.offset = { offsetPos.x, posAt(0.75f, vib.offset).y };
 
     h.waveform = { h.rate.x, h.rate.y + 18.0f };
 
@@ -816,7 +578,7 @@ PianoRoll::VibHandlePositions PianoRoll::getVibHandlePositions(const NoteData& n
 PianoRoll::VibratoHandle PianoRoll::findVibratoHandleAt(float mx, float my,
                                                              NoteData*& outNote, int& outSegIdx)
 {
-    float hitR2 = 12.0f * 12.0f; 
+    float hitR2 = 12.0f * 12.0f;
 
     for (auto& note : noteSequence.getAllNotes())
     {
@@ -876,7 +638,6 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
         auto bounds = boundsForNote(note);
         if (bounds.getRight() < 0 || bounds.getX() > getWidth()) continue;
 
-        float pps = getPixelsPerSemitone();
         float dur = (float)note.durationBeats;
         float noteW = bounds.getWidth();
 
@@ -914,8 +675,8 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
 
                 float amp = vib.depth * envelope;
                 float ofsEnv = vib.offset * envelope;
-                float topY = bounds.getCentreY() - (basePitch + ofsEnv + amp) * pps;
-                float botY = bounds.getCentreY() - (basePitch + ofsEnv - amp) * pps;
+                float topY = yForNoteOffset(note.noteNumber, basePitch + ofsEnv + amp);
+                float botY = yForNoteOffset(note.noteNumber, basePitch + ofsEnv - amp);
 
                 if (s == 0)
                 {
@@ -939,16 +700,18 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
                 float fadeInX = xA + vib.fadeInFrac * segW;
                 float baseFI = PitchCurveInterpolator::interpolate(note.pitchCurve,
                     ptA.time + vib.fadeInFrac * (ptB.time - ptA.time), false);
-                float yFI = bounds.getCentreY() - baseFI * pps;
-                g.drawLine(fadeInX, yFI - vib.depth * pps - 5, fadeInX, yFI + vib.depth * pps + 5, 1.0f);
+                float yFI = yForNoteOffset(note.noteNumber, baseFI);
+                float depthFI = std::abs(yFI - yForNoteOffset(note.noteNumber, baseFI + vib.depth));
+                g.drawLine(fadeInX, yFI - depthFI - 5, fadeInX, yFI + depthFI + 5, 1.0f);
             }
             if (vib.fadeOutFrac > 0.01f)
             {
                 float fadeOutX = xB - vib.fadeOutFrac * segW;
                 float baseFO = PitchCurveInterpolator::interpolate(note.pitchCurve,
                     ptA.time + (1.0f - vib.fadeOutFrac) * (ptB.time - ptA.time), false);
-                float yFO = bounds.getCentreY() - baseFO * pps;
-                g.drawLine(fadeOutX, yFO - vib.depth * pps - 5, fadeOutX, yFO + vib.depth * pps + 5, 1.0f);
+                float yFO = yForNoteOffset(note.noteNumber, baseFO);
+                float depthFO = std::abs(yFO - yForNoteOffset(note.noteNumber, baseFO + vib.depth));
+                g.drawLine(fadeOutX, yFO - depthFO - 5, fadeOutX, yFO + depthFO + 5, 1.0f);
             }
 
             auto h = getVibHandlePositions(note, seg);
@@ -984,11 +747,11 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
                 }
             };
 
-            drawHandle(h.depth,   Colour(0xff00ccdd), VibratoHandle::Depth, true);   
-            drawHandle(h.rate,    Colour(0xff44bb44), VibratoHandle::Rate);           
-            drawHandle(h.fadeIn,  Colour(0xffccaa44), VibratoHandle::FadeIn);         
-            drawHandle(h.fadeOut, Colour(0xffccaa44), VibratoHandle::FadeOut);        
-            drawHandle(h.offset,  Colour(0xffdd8844), VibratoHandle::Offset);         
+            drawHandle(h.depth,   Colour(0xff2b2b33), VibratoHandle::Depth, true);
+            drawHandle(h.rate,    Colour(0xff6f6f7a), VibratoHandle::Rate);
+            drawHandle(h.fadeIn,  Colour(0xff9a9aa4), VibratoHandle::FadeIn);
+            drawHandle(h.fadeOut, Colour(0xff9a9aa4), VibratoHandle::FadeOut);
+            drawHandle(h.offset,  Colour(0xff55555f), VibratoHandle::Offset);
 
             {
                 const char* wfName = vibratoWaveformName(vib.waveform);
@@ -1030,7 +793,7 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
                     
                     if (lx + labelW > getWidth()) lx = pos.x - labelW - 8;
                     g.setColour(FPColours::surface.withAlpha(0.92f));
-                    g.fillRoundedRectangle(lx, pos.y - 10, labelW, 18, 3);
+                    g.fillRect(lx, pos.y - 10.0f, labelW, 18.0f);
                     g.setColour(FPColours::text);
                     g.setFont(FontOptions(10.0f));
                     g.drawText(label, (int)lx + 4, (int)(pos.y - 10), (int)labelW - 8, 18,
@@ -1043,50 +806,47 @@ void PianoRoll::drawVibratoHandles(Graphics& g)
 
 void PianoRoll::drawGrid(Graphics& g)
 {
-    drawGridBackground(g, false);
-    drawGridLines(g, false);
+    drawGridBackground(g);
+    drawGridLines(g);
 }
 
-void PianoRoll::drawGridBackground(Graphics& g, bool specVisible)
-{
-    float w = (float)getWidth();
-
-    int lowInt = (int)std::floor(viewLowest);
-    int highInt = (int)std::ceil(viewHighest);
-
-    float bgAlpha = specVisible ? 0.25f : 1.0f;
-
-    for (int note = lowInt; note <= highInt; ++note)
-    {
-        float rowTop = yForNote((double)(note + 1));
-        float rowBot = yForNote((double)note);
-        float rowH = rowBot - rowTop;
-
-        int n = note % 12;
-        bool black = (n == 1 || n == 3 || n == 6 || n == 8 || n == 10);
-
-        auto rowColour = black ? Colour(0xff1e1e2c) : Colour(0xff2c2c40);
-        g.setColour(rowColour.withAlpha(bgAlpha));
-        g.fillRect(0.0f, rowTop, w, rowH);
-    }
-}
-
-void PianoRoll::drawGridLines(Graphics& g, bool specVisible)
+void PianoRoll::drawGridBackground(Graphics& g)
 {
     float w = (float)getWidth();
     float h = (float)getHeight();
+    auto& rows = ragaRows();
+    float rh = rowHeight();
 
-    float lineAlpha = specVisible ? 0.4f : 1.0f;
+    g.setColour(FPColours::background);
+    g.fillRect(0.0f, 0.0f, w, h);
 
-    int lowInt = (int)std::floor(viewLowest);
-    int highInt = (int)std::ceil(viewHighest);
+    int i = 0;
+    for (int note : rows)
+    {
+        float top = h - (float)(i + 1) * rh;
 
-    for (int note = lowInt; note <= highInt; ++note)
+        g.setColour(i % 2 == 0 ? FPColours::rowFill : FPColours::rowFillAlt);
+        g.fillRect(0.0f, top, w, rh);
+
+        g.setColour(FPColours::textDim);
+        g.setFont(FontOptions(11.0f));
+        g.drawText(FPColours::swaraName(FPColours::relativeInterval(note, ragaRootMidi)),
+                   6, (int)top, 48, (int)rh, Justification::centredLeft);
+        ++i;
+    }
+}
+
+void PianoRoll::drawGridLines(Graphics& g)
+{
+    float w = (float)getWidth();
+    float h = (float)getHeight();
+    auto& rows = ragaRows();
+
+    for (int note : rows)
     {
         float y = yForNote((double)note);
-        bool isC = (note % 12 == 0);
-        auto col = isC ? Colour(0xff4a4a60) : Colour(0xff38384c);
-        g.setColour(col.withAlpha(lineAlpha));
+        bool isSa = (FPColours::relativeInterval(note, ragaRootMidi) == 0);
+        g.setColour(isSa ? FPColours::gridLineBright : FPColours::gridLine);
         g.drawHorizontalLine((int)y, 0.0f, w);
     }
 
@@ -1096,14 +856,14 @@ void PianoRoll::drawGridLines(Graphics& g, bool specVisible)
     {
         float x = xForBeat((double)beat);
         bool isBarLine = (beat % 4 == 0);
-        auto col = isBarLine ? Colour(0xff4a4a60) : Colour(0xff38384c);
-        g.setColour(col.withAlpha(lineAlpha));
+        auto col = isBarLine ? FPColours::gridLineBright : FPColours::gridLine;
+        g.setColour(col);
         g.drawVerticalLine((int)x, 0.0f, h);
 
         for (int sub = 1; sub < 4; ++sub)
         {
             float subX = xForBeat((double)beat + (double)sub / 4.0);
-            g.setColour(Colour(0xff30303e).withAlpha(lineAlpha));
+            g.setColour(FPColours::gridLine.withAlpha(0.5f));
             g.drawVerticalLine((int)subX, 0.0f, h);
         }
     }
@@ -1136,9 +896,6 @@ void PianoRoll::drawNotes(Graphics& g, NoteDrawPass pass)
     const bool drawBodies = (pass == NoteDrawPass::Bodies || pass == NoteDrawPass::Both);
     const bool drawCurves = (pass == NoteDrawPass::Curves || pass == NoteDrawPass::Both);
 
-    float pps = getPixelsPerSemitone();
-    float noteAlpha = 1.0f;
-
     for (auto& note : noteSequence.getAllNotes())
     {
         auto bounds = boundsForNote(note);
@@ -1155,10 +912,13 @@ void PianoRoll::drawNotes(Graphics& g, NoteDrawPass pass)
 
         bool isSelected = (&note == selectedNote);
 
-        float perNoteAlpha = noteAlpha;
-
         if (drawBodies)
-            NoteComponent::drawNote(g, note, bounds, isSelected, perNoteAlpha);
+        {
+            auto noteColour = ragaVadiInterval >= 0
+                ? FPColours::swaraColour(ragaVadiInterval)
+                : FPColours::swaraColour(FPColours::relativeInterval(note.noteNumber, ragaRootMidi));
+            NoteComponent::drawNote(g, bounds, isSelected, noteColour);
+        }
 
         if (drawCurves)
         {
@@ -1166,11 +926,11 @@ void PianoRoll::drawNotes(Graphics& g, NoteDrawPass pass)
             if (&note == hoveredSegmentNote)
             {
                 if (highlightEntireCurve)
-                    segHover = -2;  
+                    segHover = -2;
                 else
                     segHover = hoveredSegmentIndex;
             }
-            NoteComponent::drawPitchCurve(g, note, bounds, pps, segHover);
+            NoteComponent::drawPitchCurve(g, note, bounds, *this, segHover);
         }
 
         if (drawBodies)
@@ -1182,7 +942,7 @@ void PianoRoll::drawNotes(Graphics& g, NoteDrawPass pass)
                     bounds.getX(), bounds.getY(), bounds.getWidth(), handleHeight);
 
                 g.setColour(FPColours::pitchCurveAlt.withAlpha(0.45f));
-                g.fillRoundedRectangle(handleRect, 2.0f);
+                g.fillRect(handleRect);
 
                 float cx = handleRect.getCentreX();
                 float cy = handleRect.getCentreY();
@@ -1206,50 +966,6 @@ void PianoRoll::drawPlayhead(Graphics& g)
     g.fillRect(x - 1.0f, 0.0f, 2.0f, (float)getHeight());
 }
 
-void PianoRoll::drawFreehandPreview(Graphics& g)
-{
-    if (!curveDrawer.isDrawing()) return;
-
-    auto& points = curveDrawer.getDrawnPoints();
-    if (points.empty()) return;
-
-    auto* note = curveDrawer.getTargetNote();
-    if (note == nullptr) return;
-
-    auto bounds = boundsForNote(*note);
-    float pps = getPixelsPerSemitone();
-
-    Path previewPath;
-    bool started = false;
-
-    for (auto& pt : points)
-    {
-        float x = bounds.getX() + (float)(pt.time / note->durationBeats) * bounds.getWidth();
-        float y = bounds.getCentreY() - (float)pt.pitchOffset * pps;
-
-        if (!started) { previewPath.startNewSubPath(x, y); started = true; }
-        else previewPath.lineTo(x, y);
-    }
-
-    g.setColour(FPColours::pitchCurveAlt.withAlpha(0.6f));
-    g.strokePath(previewPath, PathStrokeType(2.0f, PathStrokeType::curved));
-
-    auto& lastPt = points.back();
-    float lastX = bounds.getX() + (float)(lastPt.time / note->durationBeats) * bounds.getWidth();
-    float lastY = bounds.getCentreY() - (float)lastPt.pitchOffset * pps;
-    float curX = bounds.getX() + (float)(curveDrawer.getCursorTime() / note->durationBeats) * bounds.getWidth();
-    float curY = bounds.getCentreY() - curveDrawer.getCursorPitch() * pps;
-
-    if (std::abs(curX - lastX) > 1.0f || std::abs(curY - lastY) > 1.0f)
-    {
-        g.setColour(FPColours::pitchCurveAlt.withAlpha(0.35f));
-        g.drawLine(lastX, lastY, curX, curY, 1.5f);
-
-        g.setColour(FPColours::pitchCurveAlt.withAlpha(0.5f));
-        g.fillEllipse(curX - 3.0f, curY - 3.0f, 6.0f, 6.0f);
-    }
-}
-
 void PianoRoll::drawHoverFeedback(Graphics& g)
 {
     
@@ -1270,11 +986,10 @@ void PianoRoll::drawHoverFeedback(Graphics& g)
     if (hoveredPointIndex >= (int)hoveredPointNote->pitchCurve.size()) return;
 
     auto bounds = boundsForNote(*hoveredPointNote);
-    float pps = getPixelsPerSemitone();
     auto& pt = hoveredPointNote->pitchCurve[(size_t)hoveredPointIndex];
 
     float px = bounds.getX() + (float)(pt.time / hoveredPointNote->durationBeats) * bounds.getWidth();
-    float py = bounds.getCentreY() - (float)pt.pitchOffset * pps;
+    float py = yForNoteOffset(hoveredPointNote->noteNumber, (float)pt.pitchOffset);
 
     g.setColour(FPColours::pitchCurveAlt.withAlpha(0.25f));
     g.fillEllipse(px - 5, py - 5, 10, 10);
@@ -1289,10 +1004,8 @@ void PianoRoll::paint(Graphics& g)
     drawGrid(g);
     drawDefaultPitchLines(g);
     drawNotes(g);
-    drawFreehandPreview(g);
-    if (currentTool == EditorToolbar::Tool::Vibrato)
+    if (currentTool == ::Toolbar::Tool::Vibrato)
         drawVibratoHandles(g);
-    drawExpressionPreview(g);
     drawRecordingPreview(g);
     drawMarqueeSelection(g);
     drawHoverFeedback(g);
@@ -1302,10 +1015,10 @@ void PianoRoll::paint(Graphics& g)
         Point<float> p0 = mouseDownPos;
         Point<float> p1 = cutLineEnd;
 
-        g.setColour(Colour(0x40ff5050));
+        g.setColour(Colour(0x40000000));
         g.drawLine(p0.x, p0.y, p1.x, p1.y, 5.0f);
         
-        g.setColour(Colour(0xffff6060));
+        g.setColour(Colour(0xff2b2b33));
         g.drawLine(p0.x, p0.y, p1.x, p1.y, 1.8f);
 
         float dx = p1.x - p0.x, dy = p1.y - p0.y;
@@ -1321,7 +1034,7 @@ void PianoRoll::paint(Graphics& g)
                 cutX = p0.x + t * dx;
             }
             if (cutX <= b.getX() + 1.0f || cutX >= b.getRight() - 1.0f) continue;
-            g.setColour(Colour(0xffffe070));
+            g.setColour(Colour(0xff2b2b33));
             g.fillRect(cutX - 1.0f, b.getY(), 2.0f, b.getHeight());
         }
     }
@@ -1338,7 +1051,7 @@ void PianoRoll::paint(Graphics& g)
                 auto bounds = boundsForNote(*sel.note);
                 auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
                 float px = bounds.getX() + (float)(pt.time / sel.note->durationBeats) * bounds.getWidth();
-                float py = bounds.getCentreY() - (float)pt.pitchOffset * getPixelsPerSemitone();
+                float py = yForNoteOffset(sel.note->noteNumber, (float)pt.pitchOffset);
 
                 g.setColour(FPColours::accentCyan.withAlpha(0.7f));
                 g.drawEllipse(px - 6.0f, py - 6.0f, 12.0f, 12.0f, 1.5f);
@@ -1357,8 +1070,8 @@ void PianoRoll::paint(Graphics& g)
         drawSelectionBoundingBox(g);
     }
 
-    if (hoveredNote != nullptr && hoveredPointIndex < 0 && gamakaStampName.isEmpty()
-        && currentTool == EditorToolbar::Tool::Edit)
+    if (hoveredNote != nullptr && hoveredPointIndex < 0
+        && currentTool == ::Toolbar::Tool::Edit)
     {
         auto mousePos = getMouseXYRelative();
         double beat = beatAtX((float)mousePos.x);
@@ -1369,7 +1082,7 @@ void PianoRoll::paint(Graphics& g)
                           + " (" + String(cents) + "c)";
 
         g.setColour(FPColours::surface.withAlpha(0.9f));
-        g.fillRoundedRectangle((float)mousePos.x + 10, (float)mousePos.y - 25, 180, 20, 4);
+        g.fillRect((float)mousePos.x + 10, (float)mousePos.y - 25, 180.0f, 20.0f);
         g.setColour(FPColours::text);
         g.setFont(FontOptions(11.0f));
         g.drawText(info, (int)mousePos.x + 14, mousePos.y - 25, 176, 20, Justification::centredLeft);
@@ -1382,14 +1095,15 @@ void PianoRoll::drawRecordingOverlay(Graphics& g)
 {
     if (!isRecording) return;
 
-    g.setColour(Colour(0x0cff2020));
+    g.setColour(Colour(0x14000000));
     g.fillRect(getLocalBounds());
 
-    g.setColour(Colour(0x40ff3030));
+    g.setColour(Colour(0x40000000));
     g.drawRect(getLocalBounds(), 2);
 
-    g.setColour(Colour(0xccff3030));
-    g.fillEllipse(10.0f, 8.0f, 8.0f, 8.0f);  
+    g.setColour(Colour(0xffb00000));
+    g.fillEllipse(10.0f, 8.0f, 8.0f, 8.0f);
+    g.setColour(FPColours::text);
     g.setFont(FontOptions(12.0f, Font::bold));
     g.drawText("REC", 22, 5, 40, 14, Justification::centredLeft);
 }
@@ -1398,94 +1112,39 @@ void PianoRoll::drawRecordingPreview(Graphics& g)
 {
     if (recordingPreviewNotes.empty()) return;
 
-    float pps = getPixelsPerSemitone();
-
     for (auto& rn : recordingPreviewNotes)
     {
         float x1 = xForBeat(rn.startBeat);
         float x2 = xForBeat(rn.startBeat + rn.durationBeats);
-        float y = yForNote((double)rn.noteNumber + 1);
-        float noteH = yForNote((double)rn.noteNumber) - y;
+        float y = rowTopY(rn.noteNumber);
+        float noteH = rowHeight();
 
         if (x2 < 0 || x1 > (float)getWidth()) continue;
 
-        g.setColour(Colour(0x55ff6030));
-        g.fillRoundedRectangle(x1, y, x2 - x1, noteH, 2.0f);
+        g.setColour(Colour(0x55000000));
+        g.fillRect(x1, y, x2 - x1, noteH);
 
-        g.setColour(Colour(0x88ff6030));
-        g.drawRoundedRectangle(x1, y, x2 - x1, noteH, 2.0f, 1.0f);
+        g.setColour(Colour(0x88000000));
+        g.drawRect(x1, y, x2 - x1, noteH, 1.0f);
 
         if (rn.pitchCurve.size() >= 2)
         {
-            float centreY = y + noteH * 0.5f;
             Path curvePath;
             bool started = false;
 
             for (auto& pt : rn.pitchCurve)
             {
                 float px = xForBeat(rn.startBeat + pt.relTime);
-                float py = centreY - pt.offset * pps;
+                float py = yForNoteOffset((double)rn.noteNumber, (float)pt.offset);
 
                 if (!started) { curvePath.startNewSubPath(px, py); started = true; }
                 else curvePath.lineTo(px, py);
             }
 
-            g.setColour(Colour(0xccff8040));
+            g.setColour(Colour(0xcc2b2b33));
             g.strokePath(curvePath, PathStrokeType(1.5f));
         }
     }
-}
-
-void PianoRoll::drawExpressionPreview(Graphics& g)
-{
-    if (gamakaStampName.isEmpty() || hoveredNote == nullptr) return;
-
-    auto noteBounds = boundsForNote(*hoveredNote);
-    auto exprPoints = generateGamakaForNote(gamakaStampName, hoveredNote, gamakaStampIntensity);
-
-    if (exprPoints.empty()) return;
-
-    std::vector<PitchPoint> mergedCurve = hoveredNote->pitchCurve;
-    if (mergedCurve.empty())
-        mergedCurve = exprPoints;
-    else
-        PitchCurveInterpolator::mergeIntoCurve(mergedCurve, exprPoints, 0.0);
-
-    float pps = getPixelsPerSemitone();
-    float baseY = noteBounds.getCentreY();
-    bool hasExisting = !hoveredNote->pitchCurve.empty();
-
-    Path ghostPath;
-    int steps = jmax(60, (int)(noteBounds.getWidth() * 2));
-    for (int s = 0; s <= steps; ++s)
-    {
-        float frac = (float)s / (float)steps;
-        double t = frac * hoveredNote->durationBeats;
-        float pitch = PitchCurveInterpolator::interpolate(mergedCurve, t, false);
-        float x = noteBounds.getX() + frac * noteBounds.getWidth();
-        float y = baseY - pitch * pps;
-        if (s == 0) ghostPath.startNewSubPath(x, y);
-        else ghostPath.lineTo(x, y);
-    }
-
-    g.setColour(FPColours::gamaka.withAlpha(0.55f));
-    g.strokePath(ghostPath, PathStrokeType(2.0f));
-
-    Path fillPath(ghostPath);
-    for (int s = steps; s >= 0; --s)
-    {
-        float frac = (float)s / (float)steps;
-        double t = frac * hoveredNote->durationBeats;
-        float existingPitch = 0.0f;
-        if (hasExisting)
-            existingPitch = PitchCurveInterpolator::interpolate(hoveredNote->pitchCurve, t, false);
-        float x = noteBounds.getX() + frac * noteBounds.getWidth();
-        float y = baseY - existingPitch * pps;
-        fillPath.lineTo(x, y);
-    }
-    fillPath.closeSubPath();
-    g.setColour(FPColours::gamaka.withAlpha(0.1f));
-    g.fillPath(fillPath);
 }
 
 void PianoRoll::drawMarqueeSelection(Graphics& g)
@@ -1506,28 +1165,40 @@ void PianoRoll::drawMarqueeSelection(Graphics& g)
 
 Rectangle<float> PianoRoll::getMultiSelectionBoundingBox() const
 {
-    
-    bool hasPoints = false;
+    bool hasItems = false;
     float minX = 1e9f, maxX = -1e9f, minY = 1e9f, maxY = -1e9f;
 
     for (auto& sel : multiSelection)
     {
-        if (sel.pointIndex < 0 || sel.pointIndex >= (int)sel.note->pitchCurve.size())
-            continue;
+        if (sel.pointIndex >= 0 && sel.pointIndex < (int)sel.note->pitchCurve.size())
+        {
+            auto bounds = boundsForNote(*sel.note);
+            if (bounds.getX() > 1.0e5f) continue;
 
-        auto bounds = boundsForNote(*sel.note);
-        auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
-        float px = bounds.getX() + (float)(pt.time / sel.note->durationBeats) * bounds.getWidth();
-        float py = bounds.getCentreY() - (float)pt.pitchOffset * getPixelsPerSemitone();
+            auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
+            float px = bounds.getX() + (float)(pt.time / sel.note->durationBeats) * bounds.getWidth();
+            float py = yForNoteOffset(sel.note->noteNumber, (float)pt.pitchOffset);
 
-        minX = std::min(minX, px);
-        maxX = std::max(maxX, px);
-        minY = std::min(minY, py);
-        maxY = std::max(maxY, py);
-        hasPoints = true;
+            minX = std::min(minX, px);
+            maxX = std::max(maxX, px);
+            minY = std::min(minY, py);
+            maxY = std::max(maxY, py);
+            hasItems = true;
+        }
+        else if (sel.pointIndex < 0)
+        {
+            auto bounds = boundsForNote(*sel.note);
+            if (bounds.getX() > 1.0e5f) continue;
+
+            minX = std::min(minX, bounds.getX());
+            maxX = std::max(maxX, bounds.getRight());
+            minY = std::min(minY, bounds.getY());
+            maxY = std::max(maxY, bounds.getBottom());
+            hasItems = true;
+        }
     }
 
-    if (!hasPoints)
+    if (!hasItems)
         return {};
 
     constexpr float pad = 10.0f;
@@ -1564,9 +1235,13 @@ void PianoRoll::drawSelectionBoundingBox(Graphics& g)
     if (multiSelection.size() < 2) return;
 
     int dotCount = 0;
+    int noteCount = 0;
     for (auto& sel : multiSelection)
+    {
         if (sel.pointIndex >= 0) dotCount++;
-    if (dotCount < 2) return;
+        else noteCount++;
+    }
+    if (dotCount < 2 && noteCount < 2) return;
 
     auto bb = getMultiSelectionBoundingBox();
     if (bb.isEmpty()) return;
@@ -1583,7 +1258,7 @@ void PianoRoll::drawSelectionBoundingBox(Graphics& g)
 
     auto drawHandle = [&](float cx, float cy, bool isHovered)
     {
-        auto col = isHovered ? Colours::white : handleColour;
+        auto col = isHovered ? FPColours::text : handleColour;
         g.setColour(col);
         g.fillRect(cx - handleW / 2, cy - handleH / 2, handleW, handleH);
         g.setColour(col.darker(0.3f));
@@ -1624,7 +1299,7 @@ void PianoRoll::paintHorizontalScrollbar(Graphics& g)
     scrollbarThumbX = thumbFrac * maxThumbX;
 
     g.setColour(FPColours::gridLineBright);
-    g.fillRoundedRectangle(scrollbarThumbX, barY + 1.0f, scrollbarThumbW, scrollbarHeight - 2.0f, 3.0f);
+    g.fillRect(scrollbarThumbX, barY + 1.0f, scrollbarThumbW, scrollbarHeight - 2.0f);
 }
 
 void PianoRoll::mouseDownScrollbar(const MouseEvent& e)
@@ -1668,7 +1343,6 @@ void PianoRoll::updateBeatFromScrollbar()
 
 void PianoRoll::eraseDotsNear(float mx, float my)
 {
-    float pps = getPixelsPerSemitone();
     float hitRadius = 10.0f;
     float bestDist = hitRadius * hitRadius;
     NoteData* bestNote = nullptr;
@@ -1684,7 +1358,7 @@ void PianoRoll::eraseDotsNear(float mx, float my)
         {
             auto& pt = note.pitchCurve[(size_t)i];
             float px = bounds.getX() + (float)(pt.time / note.durationBeats) * bounds.getWidth();
-            float py = bounds.getCentreY() - (float)pt.pitchOffset * pps;
+            float py = yForNoteOffset(note.noteNumber, (float)pt.pitchOffset);
             float dx = mx - px;
             float dy = my - py;
             float dist = dx * dx + dy * dy;
@@ -1772,7 +1446,7 @@ std::pair<NoteData, NoteData> PianoRoll::buildSplitPair(const NoteData& src, dou
         first.curveType = segStart.curveType;
         first.curvature = segStart.curvature;
         first.bias = segStart.bias;
-        first.vibrato = segStart.vibrato; 
+        first.vibrato = segStart.vibrato;
         B.pitchCurve.push_back(first);
 
         for (int i = segIdx + 1; i < (int) src.pitchCurve.size(); ++i)
@@ -1814,8 +1488,6 @@ void PianoRoll::mouseDown(const MouseEvent& e)
         mouseDownScrollbar(e);
         return;
     }
-
-    if (onActivated) onActivated();
 
     float mx = (float)e.x;
     float my = (float)e.y;
@@ -1928,53 +1600,12 @@ void PianoRoll::mouseDown(const MouseEvent& e)
         return;
     }
 
-    if (gamakaStampName.isNotEmpty())
-    {
-        
-        NoteData* cpNote = nullptr;
-        int cpIdx = -1;
-        bool hitDot = findAnyControlPoint(mx, my, cpNote, cpIdx);
-        bool hitHandle = false;
-        for (auto& note : noteSequence.getAllNotes())
-        {
-            if (isInHandle(note, mx, my)) { hitHandle = true; break; }
-        }
-
-        if (!hitDot && !hitHandle)
-        {
-            if (clickedNote)
-            {
-                
-                saveUndoState();
-                selectedNote = clickedNote;
-                auto gamakaPoints = generateGamakaForNote(gamakaStampName, clickedNote, gamakaStampIntensity);
-
-                if (clickedNote->pitchCurve.empty())
-                    clickedNote->pitchCurve = gamakaPoints;
-                else
-                    PitchCurveInterpolator::mergeIntoCurve(clickedNote->pitchCurve, gamakaPoints, 0.0);
-
-                if (onNotesChanged) onNotesChanged();
-                if (onNoteSelected) onNoteSelected(selectedNote);
-                repaint();
-                return;
-            }
-            else
-            {
-                
-                clearExpressionStamp();
-                deselectedOnDown = true;
-                
-            }
-        }
-        
-    }
-
     switch (currentTool)
     {
-        case EditorToolbar::Tool::Edit:
-        case EditorToolbar::Tool::Pencil:
-        case EditorToolbar::Tool::Vibrato:
+        case ::Toolbar::Tool::Edit:
+        case ::Toolbar::Tool::Move:
+        case ::Toolbar::Tool::Pencil:
+        case ::Toolbar::Tool::Vibrato:
         {
             
             if (multiSelection.size() >= 2)
@@ -1994,6 +1625,10 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                             auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
                             multiDragOrigPositions.push_back({sel.note, sel.pointIndex, pt.time, pt.pitchOffset});
                         }
+                        else if (sel.pointIndex < 0)
+                        {
+                            multiDragOrigPositions.push_back({sel.note, -1, sel.note->startBeat, (double)sel.note->noteNumber});
+                        }
                     }
 
                     if (edge == ScaleEdge::Left || edge == ScaleEdge::Right)
@@ -2002,13 +1637,13 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                         scaleDragStartMouse = mx;
                         if (edge == ScaleEdge::Left)
                         {
-                            scaleDragAnchor = bb.getRight();     
-                            scaleDragMovingEdge = bb.getX();     
+                            scaleDragAnchor = bb.getRight();
+                            scaleDragMovingEdge = bb.getX();
                         }
                         else
                         {
-                            scaleDragAnchor = bb.getX();         
-                            scaleDragMovingEdge = bb.getRight(); 
+                            scaleDragAnchor = bb.getX();
+                            scaleDragMovingEdge = bb.getRight();
                         }
                     }
                     else
@@ -2017,13 +1652,13 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                         scaleDragStartMouse = my;
                         if (edge == ScaleEdge::Top)
                         {
-                            scaleDragAnchor = bb.getBottom();    
-                            scaleDragMovingEdge = bb.getY();     
+                            scaleDragAnchor = bb.getBottom();
+                            scaleDragMovingEdge = bb.getY();
                         }
                         else
                         {
-                            scaleDragAnchor = bb.getY();         
-                            scaleDragMovingEdge = bb.getBottom(); 
+                            scaleDragAnchor = bb.getY();
+                            scaleDragMovingEdge = bb.getBottom();
                         }
                     }
                     break;
@@ -2058,7 +1693,7 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                 }
             }
 
-            if (currentTool == EditorToolbar::Tool::Vibrato)
+            if (currentTool == ::Toolbar::Tool::Vibrato)
             {
                 NoteData* handleNote = nullptr;
                 int handleSeg = -1;
@@ -2096,6 +1731,7 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                 }
             }
 
+            if (currentTool != ::Toolbar::Tool::Move)
             {
                 NoteData* cpNote = nullptr;
                 int cpIdx = -1;
@@ -2134,7 +1770,8 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                 }
             }
 
-            if (!e.mods.isAltDown() && lineHoverMode != LineHoverMode::None && hoveredSegmentNote != nullptr)
+            if (currentTool != ::Toolbar::Tool::Move
+                && !e.mods.isAltDown() && lineHoverMode != LineHoverMode::None && hoveredSegmentNote != nullptr)
             {
                 if (lineHoverMode == LineHoverMode::OnLine)
                 {
@@ -2159,7 +1796,7 @@ void PianoRoll::mouseDown(const MouseEvent& e)
 
                     draggedPointIndex = findControlPointAt(hoveredSegmentNote, mx, previewDotPos.y);
                     dragMode = DragMode::DragPoint;
-                    pointClickedOnDown = false;  
+                    pointClickedOnDown = false;
                     lineHoverMode = LineHoverMode::None;
 
                     if (onNotesChanged) onNotesChanged();
@@ -2182,7 +1819,7 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                 }
             }
 
-            if (currentTool == EditorToolbar::Tool::Vibrato)
+            if (currentTool == ::Toolbar::Tool::Vibrato)
             {
                 NoteData* segNote = nullptr;
                 int segIdx = -1;
@@ -2200,10 +1837,15 @@ void PianoRoll::mouseDown(const MouseEvent& e)
 
             for (auto& note : noteSequence.getAllNotes())
             {
-                if (isInHandle(note, mx, my))
+                auto bounds = boundsForNote(note);
+                if (bounds.getX() > 1.0e5f) continue;
+
+                bool inX = mx >= bounds.getX() - 3.0f && mx <= bounds.getRight() + 3.0f;
+                bool inY = my >= bounds.getY() && my <= bounds.getBottom();
+
+                if (inX && inY)
                 {
                     selectedNote = &note;
-                    auto bounds = boundsForNote(note);
                     float distFromLeft = mx - bounds.getX();
                     float distFromRight = bounds.getRight() - mx;
 
@@ -2219,29 +1861,27 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                         noteDragStartBeat = note.startBeat;
                         noteDragOrigDuration = note.durationBeats;
                     }
-                    else
+                    else if (isInMultiSelection(&note, -1))
                     {
-                        
-                        if (isInMultiSelection(&note, -1))
+                        dragMode = DragMode::MarqueeMove;
+                        multiDragStart = { mx, my };
+                        multiDragOrigPositions.clear();
+                        for (auto& sel : multiSelection)
                         {
-                            dragMode = DragMode::MarqueeMove;
-                            multiDragStart = { mx, my };
-                            multiDragOrigPositions.clear();
-                            for (auto& sel : multiSelection)
+                            if (sel.pointIndex >= 0 && sel.pointIndex < (int)sel.note->pitchCurve.size())
                             {
-                                if (sel.pointIndex >= 0 && sel.pointIndex < (int)sel.note->pitchCurve.size())
-                                {
-                                    auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
-                                    multiDragOrigPositions.push_back({sel.note, sel.pointIndex, pt.time, pt.pitchOffset});
-                                }
-                                else if (sel.pointIndex < 0)
-                                {
-                                    multiDragOrigPositions.push_back({sel.note, -1, sel.note->startBeat, (double)sel.note->noteNumber});
-                                }
+                                auto& pt = sel.note->pitchCurve[(size_t)sel.pointIndex];
+                                multiDragOrigPositions.push_back({sel.note, sel.pointIndex, pt.time, pt.pitchOffset});
                             }
-                            break;
+                            else if (sel.pointIndex < 0)
+                            {
+                                multiDragOrigPositions.push_back({sel.note, -1, sel.note->startBeat, (double)sel.note->noteNumber});
+                            }
                         }
-
+                        break;
+                    }
+                    else if (currentTool == ::Toolbar::Tool::Move)
+                    {
                         dragMode = DragMode::MoveNote;
                         noteDragStartBeat = note.startBeat;
                         noteDragStartNote = note.noteNumber;
@@ -2254,12 +1894,48 @@ void PianoRoll::mouseDown(const MouseEvent& e)
             if (dragMode != DragMode::None)
                 break;
 
+            if (currentTool == ::Toolbar::Tool::Pencil)
+            {
+                if (clickedNote != nullptr)
+                {
+                    selectedNote = clickedNote;
+                    clearMultiSelection();
+                    break;
+                }
+
+                int noteNum = noteAtY(my);
+                if (isNoteInRaga(noteNum))
+                {
+                    double start = snapBeat(beatAtX(mx));
+                    if (start < 0.0) start = 0.0;
+                    double dur = jmin(gridDivision, totalContentBeats - start);
+
+                    if (dur > 1.0e-6 && !overlapsOtherNote(nullptr, start, start + dur, noteNum))
+                    {
+                        saveUndoState();
+                        NoteData newNote;
+                        newNote.noteNumber = noteNum;
+                        newNote.startBeat = start;
+                        newNote.durationBeats = dur;
+                        newNote.velocity = 0.8f;
+                        noteSequence.addNote(newNote);
+                        selectedNote = &noteSequence.getAllNotes().back();
+                        clearMultiSelection();
+                        dragMode = DragMode::DrawNote;
+                        if (onNotesChanged) onNotesChanged();
+                        repaint();
+                    }
+                }
+                break;
+            }
+
             if (clickedNote)
             {
                 selectedNote = clickedNote;
                 clearMultiSelection();
 
-                if (currentTool == EditorToolbar::Tool::Vibrato)
+                if (currentTool == ::Toolbar::Tool::Vibrato
+                    || currentTool == ::Toolbar::Tool::Move)
                 {
                     dragMode = DragMode::MoveNote;
                     noteDragStartBeat = clickedNote->startBeat;
@@ -2270,18 +1946,9 @@ void PianoRoll::mouseDown(const MouseEvent& e)
 
                 saveUndoState();
                 double relTime = beat - clickedNote->startBeat;
-                auto bounds = boundsForNote(*clickedNote);
-                float pps = getPixelsPerSemitone();
-                float pitchOff = (bounds.getCentreY() - my) / pps;
+                float pitchOff = noteOffsetAtY(clickedNote->noteNumber, my);
 
-                if (currentTool == EditorToolbar::Tool::Pencil)
                 {
-                    
-                    curveDrawer.beginDrawing(clickedNote, relTime, pitchOff);
-                }
-                else
-                {
-                    
                     PitchPoint pt;
                     pt.time = relTime;
                     pt.pitchOffset = pitchOff;
@@ -2318,15 +1985,14 @@ void PianoRoll::mouseDown(const MouseEvent& e)
                 if ((double)mx >= noteStartX - 5.0 && (double)mx <= noteEndX + 5.0)
                 {
                     
-                    if (currentTool == EditorToolbar::Tool::Vibrato)
+                    if (currentTool == ::Toolbar::Tool::Vibrato
+                        || currentTool == ::Toolbar::Tool::Move)
                         break;
 
                     saveUndoState();
                     double relTime = beat - selectedNote->startBeat;
                     relTime = jlimit(0.0, selectedNote->durationBeats, relTime);
-                    auto bounds = boundsForNote(*selectedNote);
-                    float pps = getPixelsPerSemitone();
-                    float pitchOff = (bounds.getCentreY() - my) / pps;
+                    float pitchOff = noteOffsetAtY(selectedNote->noteNumber, my);
 
                     PitchPoint pt;
                     pt.time = relTime;
@@ -2397,6 +2063,33 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
         return;
     }
 
+    if (dragMode == DragMode::DrawNote)
+    {
+        if (selectedNote == nullptr) { dragMode = DragMode::None; return; }
+
+        double startBeat = selectedNote->startBeat;
+        double endBeat = snapBeat(beat);
+        if (endBeat <= startBeat)
+            endBeat = startBeat + gridDivision;
+
+        double limit = totalContentBeats;
+        for (auto& n : noteSequence.getAllNotes())
+        {
+            if (&n == selectedNote) continue;
+            if (n.noteNumber != selectedNote->noteNumber) continue;
+            if (n.startBeat >= startBeat - 1.0e-9)
+                limit = jmin(limit, n.startBeat);
+        }
+
+        double maxDuration = jmax(0.0, limit - startBeat);
+        double wanted = jmax(0.125, endBeat - startBeat);
+
+        selectedNote->durationBeats = jmin(maxDuration, wanted);
+        if (onNotesChanged) onNotesChanged();
+        repaint();
+        return;
+    }
+
     if (dragMode == DragMode::MarqueeSelect)
     {
         float x0 = std::min(mouseDownPos.x, mx);
@@ -2421,26 +2114,69 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
         float deltaX = mx - multiDragStart.x;
         float deltaY = my - multiDragStart.y;
         double beatDelta = beatAtX(multiDragStart.x + deltaX) - beatAtX(multiDragStart.x);
-        float pps = getPixelsPerSemitone();
-        float pitchDelta = -deltaY / pps;
+        float pitchDelta = (float)((centsAtY(my) - centsAtY(multiDragStart.y)) / 100.0);
+
+        struct NewPos { NoteData* note; int pointIdx; double beat; double pitch; double start; int noteNum; };
+        std::vector<NewPos> targets;
+        std::set<NoteData*> moving;
 
         for (auto& orig : multiDragOrigPositions)
         {
+            NewPos t { orig.note, orig.pointIdx, orig.beat, orig.pitch, orig.beat, (int)orig.pitch };
+
             if (orig.pointIdx >= 0 && orig.pointIdx < (int)orig.note->pitchCurve.size())
             {
-                
-                auto& pt = orig.note->pitchCurve[(size_t)orig.pointIdx];
-                pt.time = jlimit(0.0, orig.note->durationBeats, orig.beat + beatDelta);
-                pt.pitchOffset = orig.pitch + pitchDelta;
+                t.start = jlimit(0.0, orig.note->durationBeats, orig.beat + beatDelta);
+                float origY = yForNoteOffset(orig.note->noteNumber, (float)orig.pitch);
+                t.pitch = noteOffsetAtY(orig.note->noteNumber, origY + deltaY);
             }
             else if (orig.pointIdx < 0)
             {
-                
-                double newStart = orig.beat + beatDelta;
-                newStart = snapBeat(newStart);
-                orig.note->startBeat = newStart;
+                double newStart = snapBeat(orig.beat + beatDelta);
+                if (newStart < 0.0) newStart = 0.0;
+                if (newStart + orig.note->durationBeats > totalContentBeats)
+                    newStart = jmax(0.0, totalContentBeats - orig.note->durationBeats);
+
                 int noteDelta = (int)std::round(pitchDelta);
-                orig.note->noteNumber = (int)orig.pitch + noteDelta;
+                int newNoteNum = (int)orig.pitch + noteDelta;
+                if (!isNoteInRaga(newNoteNum)) newNoteNum = orig.note->noteNumber;
+
+                t.start = newStart;
+                t.noteNum = newNoteNum;
+                moving.insert(orig.note);
+            }
+
+            targets.push_back(t);
+        }
+
+        for (auto& t : targets)
+        {
+            if (t.pointIdx >= 0 && t.pointIdx < (int)t.note->pitchCurve.size())
+            {
+                auto& pt = t.note->pitchCurve[(size_t)t.pointIdx];
+                pt.time = t.start;
+                pt.pitchOffset = t.pitch;
+            }
+            else if (t.pointIdx < 0)
+            {
+                bool blocked = false;
+                for (auto& other : noteSequence.getAllNotes())
+                {
+                    if (&other == t.note || other.noteNumber != t.noteNum) continue;
+                    if (moving.count(&other)) continue;
+                    if (t.start < other.getEndBeat() - 1.0e-9
+                        && other.startBeat < t.start + t.note->durationBeats - 1.0e-9)
+                    {
+                        blocked = true;
+                        break;
+                    }
+                }
+
+                if (!blocked)
+                {
+                    t.note->startBeat = t.start;
+                    t.note->noteNumber = t.noteNum;
+                }
             }
         }
 
@@ -2459,7 +2195,7 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
         if (dragMode == DragMode::ScaleHorizontal)
         {
             
-            float origSpan = scaleDragMovingEdge - scaleDragAnchor; 
+            float origSpan = scaleDragMovingEdge - scaleDragAnchor;
             if (std::abs(origSpan) < 1.0f) return;
 
             float mouseDelta = mx - scaleDragStartMouse;
@@ -2469,8 +2205,8 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
             float scale = newSpan / origSpan;
 
             float anchorContent = (activeScaleEdge == ScaleEdge::Left)
-                                    ? scaleDragAnchor - pad   
-                                    : scaleDragAnchor + pad;  
+                                    ? scaleDragAnchor - pad
+                                    : scaleDragAnchor + pad;
 
             for (auto& orig : multiDragOrigPositions)
             {
@@ -2488,9 +2224,34 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
 
                     pt.pitchOffset = orig.pitch;
                 }
+                else if (orig.pointIdx < 0)
+                {
+                    auto bounds = boundsForNote(*orig.note);
+                    if (bounds.getX() > 1.0e5f) continue;
+
+                    float newStartPx = anchorContent + (bounds.getX() - anchorContent) * scale;
+                    float newEndPx = anchorContent + (bounds.getRight() - anchorContent) * scale;
+
+                    double newStart = beatAtX(newStartPx);
+                    double newEnd = beatAtX(newEndPx);
+
+                    if (newStart < 0.0)
+                    {
+                        newEnd += -newStart;
+                        newStart = 0.0;
+                    }
+                    if (newEnd > totalContentBeats) newEnd = totalContentBeats;
+
+                    double dur = newEnd - newStart;
+                    if (dur >= 0.125)
+                    {
+                        orig.note->startBeat = newStart;
+                        orig.note->durationBeats = dur;
+                    }
+                }
             }
         }
-        else 
+        else
         {
             float origSpan = scaleDragMovingEdge - scaleDragAnchor;
             if (std::abs(origSpan) < 1.0f) return;
@@ -2502,26 +2263,38 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
             float scale = newSpan / origSpan;
 
             float anchorContent = (activeScaleEdge == ScaleEdge::Top)
-                                    ? scaleDragAnchor - pad   
-                                    : scaleDragAnchor + pad;  
-
-            float pps = getPixelsPerSemitone();
+                                    ? scaleDragAnchor - pad
+                                    : scaleDragAnchor + pad;
 
             for (auto& orig : multiDragOrigPositions)
             {
                 if (orig.pointIdx >= 0 && orig.pointIdx < (int)orig.note->pitchCurve.size())
                 {
                     auto& pt = orig.note->pitchCurve[(size_t)orig.pointIdx];
-                    auto bounds = boundsForNote(*orig.note);
 
-                    float origPy = bounds.getCentreY() - (float)orig.pitch * pps;
+                    float origPy = yForNoteOffset(orig.note->noteNumber, (float)orig.pitch);
 
                     float newPy = anchorContent + (origPy - anchorContent) * scale;
 
-                    float newPitchOff = (bounds.getCentreY() - newPy) / pps;
+                    float newPitchOff = noteOffsetAtY(orig.note->noteNumber, newPy);
                     pt.pitchOffset = newPitchOff;
 
                     pt.time = orig.beat;
+                }
+                else if (orig.pointIdx < 0)
+                {
+                    auto bounds = boundsForNote(*orig.note);
+                    if (bounds.getX() > 1.0e5f) continue;
+
+                    float newPy = anchorContent + (bounds.getCentreY() - anchorContent) * scale;
+                    int targetNote = noteAtY(newPy);
+
+                    if (isNoteInRaga(targetNote)
+                        && !overlapsOtherNote(orig.note, orig.note->startBeat,
+                                              orig.note->getEndBeat(), targetNote))
+                    {
+                        orig.note->noteNumber = targetNote;
+                    }
                 }
             }
         }
@@ -2531,7 +2304,9 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
         return;
     }
 
-    if ((currentTool == EditorToolbar::Tool::Edit || currentTool == EditorToolbar::Tool::Pencil || currentTool == EditorToolbar::Tool::Vibrato) && selectedNote != nullptr)
+    if ((currentTool == ::Toolbar::Tool::Edit || currentTool == ::Toolbar::Tool::Pencil
+         || currentTool == ::Toolbar::Tool::Move || currentTool == ::Toolbar::Tool::Vibrato)
+        && selectedNote != nullptr)
     {
         switch (dragMode)
         {
@@ -2570,7 +2345,6 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                 {
                     
                     auto bounds = boundsForNote(*selectedNote);
-                    float pps = getPixelsPerSemitone();
 
                     double relTime = (double)(mx - bounds.getX()) / (double)bounds.getWidth() * selectedNote->durationBeats;
                     relTime = jlimit(0.0, selectedNote->durationBeats, relTime);
@@ -2580,11 +2354,11 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                         int idx = draggedPointIndex;
                         double minT = (idx > 0) ? curve[(size_t)(idx - 1)].time : 0.0;
                         double maxT = (idx < (int)curve.size() - 1) ? curve[(size_t)(idx + 1)].time : selectedNote->durationBeats;
-                        const double minGap = selectedNote->durationBeats * 0.005; 
+                        const double minGap = selectedNote->durationBeats * 0.005;
                         relTime = jlimit(minT + minGap, maxT - minGap, relTime);
                     }
 
-                    float pitchOff = (bounds.getCentreY() - my) / pps;
+                    float pitchOff = noteOffsetAtY(selectedNote->noteNumber, my);
 
                     if (e.mods.isCommandDown())
                         pitchOff = std::round(pitchOff);
@@ -2643,10 +2417,8 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                 float deltaY = my - mouseDownPos.y;
 
                 auto bounds = boundsForNote(*lineDragNote);
-                float pps = getPixelsPerSemitone();
 
                 double beatDelta = (double)deltaX / (double)bounds.getWidth() * lineDragNote->durationBeats;
-                float pitchDelta = -deltaY / pps;
 
                 for (size_t i = 0; i < lineDragNote->pitchCurve.size() && i < lineDragOrigPositions.size(); ++i)
                 {
@@ -2654,7 +2426,8 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                     auto& orig = lineDragOrigPositions[i];
                     pt.time = jlimit(0.0, lineDragNote->durationBeats, orig.time + beatDelta);
 
-                    float newPitch = (float)(orig.pitchOffset + pitchDelta);
+                    float origY = yForNoteOffset(lineDragNote->noteNumber, (float)orig.pitchOffset);
+                    float newPitch = noteOffsetAtY(lineDragNote->noteNumber, origY + deltaY);
                     if (e.mods.isCommandDown())
                         newPitch = std::round(newPitch);
                     else if (e.mods.isShiftDown())
@@ -2706,11 +2479,22 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                 double beatDelta = beat - beatAtX(mouseDownPos.x);
                 int noteDelta = noteAtY(my) - noteAtY(mouseDownPos.y);
 
-                double newStart = noteDragStartBeat + beatDelta;
-                newStart = snapBeat(newStart);
+                double newStart = snapBeat(noteDragStartBeat + beatDelta);
+                if (newStart < 0.0) newStart = 0.0;
+                if (newStart + selectedNote->durationBeats > totalContentBeats)
+                    newStart = jmax(0.0, totalContentBeats - selectedNote->durationBeats);
 
-                selectedNote->startBeat = newStart;
-                selectedNote->noteNumber = noteDragStartNote + noteDelta;
+                int newNoteNum = noteDragStartNote + noteDelta;
+                if (!isNoteInRaga(newNoteNum))
+                    newNoteNum = noteDragStartNote;
+
+                if (duplicatedForDrag
+                    || !overlapsOtherNote(selectedNote, newStart,
+                                          newStart + selectedNote->durationBeats, newNoteNum))
+                {
+                    selectedNote->startBeat = newStart;
+                    selectedNote->noteNumber = newNoteNum;
+                }
 
                 if (onNotesChanged) onNotesChanged();
                 repaint();
@@ -2725,11 +2509,21 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                     undoSavedForDrag = true;
                 }
 
-                double newEnd = beat;
-                newEnd = snapBeat(newEnd);
+                double newEnd = snapBeat(beat);
+                if (newEnd > totalContentBeats) newEnd = totalContentBeats;
 
-                double newDuration = newEnd - selectedNote->startBeat;
-                selectedNote->durationBeats = jmax(0.125, newDuration);
+                double limit = newEnd;
+                for (auto& n : noteSequence.getAllNotes())
+                {
+                    if (&n == selectedNote) continue;
+                    if (n.noteNumber != selectedNote->noteNumber) continue;
+                    if (n.startBeat >= selectedNote->startBeat + 1.0e-9)
+                        limit = jmin(limit, n.startBeat);
+                }
+
+                double wanted = jmax(0.125, newEnd - selectedNote->startBeat);
+                double maxDuration = jmax(0.125, limit - selectedNote->startBeat);
+                selectedNote->durationBeats = jmin(wanted, maxDuration);
 
                 if (onNotesChanged) onNotesChanged();
                 repaint();
@@ -2744,10 +2538,20 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
                     undoSavedForDrag = true;
                 }
 
-                double newStart = beat;
-                newStart = snapBeat(newStart);
+                double newStart = snapBeat(beat);
+                if (newStart < 0.0) newStart = 0.0;
 
                 double origEnd = noteDragStartBeat + noteDragOrigDuration;
+                double minStart = 0.0;
+                for (auto& n : noteSequence.getAllNotes())
+                {
+                    if (&n == selectedNote) continue;
+                    if (n.noteNumber != selectedNote->noteNumber) continue;
+                    if (n.getEndBeat() <= origEnd + 1.0e-9)
+                        minStart = jmax(minStart, n.getEndBeat());
+                }
+                if (newStart < minStart) newStart = minStart;
+
                 double newDuration = origEnd - newStart;
 
                 if (newDuration >= 0.125)
@@ -2762,13 +2566,14 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
             }
 
             case DragMode::VibratoHandle:
-                break; 
+                break;
 
             case DragMode::MarqueeSelect:
             case DragMode::MarqueeMove:
             case DragMode::ScaleHorizontal:
             case DragMode::ScaleVertical:
-                break; 
+            case DragMode::DrawNote:
+                break;
 
             case DragMode::None:
                 break;
@@ -2816,19 +2621,6 @@ void PianoRoll::mouseDrag(const MouseEvent& e)
         }
 
         if (onNotesChanged) onNotesChanged();
-        repaint();
-    }
-    else if (curveDrawer.isDrawing())
-    {
-        auto* note = curveDrawer.getTargetNote();
-        if (note)
-        {
-            double relTime = beat - note->startBeat;
-            auto bounds = boundsForNote(*note);
-            float pps = getPixelsPerSemitone();
-            float pitchOff = (bounds.getCentreY() - my) / pps;
-            curveDrawer.continueDrawing(relTime, pitchOff);
-        }
         repaint();
     }
 }
@@ -2933,28 +2725,8 @@ void PianoRoll::mouseUp(const MouseEvent& e)
 
     if (dragMode == DragMode::MarqueeSelect)
     {
-        if (dist <= dragThreshold && !deselectedOnDown)
-        {
-            
-            saveUndoState();
-            int noteNum = noteAtY(my);
-            double snapBt = snapBeat(beatAtX(mx));
-            NoteData newNote;
-            newNote.noteNumber = noteNum;
-            newNote.startBeat = snapBt;
-            newNote.durationBeats = 1.0;
-            newNote.velocity = 0.8f;
-            noteSequence.addNote(newNote);
-            selectedNote = &noteSequence.getAllNotes().back();
-            clearMultiSelection();
-            if (onNotesChanged) onNotesChanged();
-            if (onNoteSelected) onNoteSelected(selectedNote);
-        }
-        else
-        {
-            
+        if (dist > dragThreshold)
             marqueeActive = false;
-        }
     }
 
     if (pointClickedOnDown && dist <= dragThreshold
@@ -2963,22 +2735,6 @@ void PianoRoll::mouseUp(const MouseEvent& e)
     {
         saveUndoState();
         clickedPointNote->pitchCurve.erase(clickedPointNote->pitchCurve.begin() + clickedPointIndex);
-        if (onNotesChanged) onNotesChanged();
-    }
-
-    if (curveDrawer.isDrawing())
-    {
-        auto* drawnNote = curveDrawer.getTargetNote();
-        curveDrawer.endDrawing();
-
-        if (drawnNote != nullptr && !drawnNote->pitchCurve.empty())
-        {
-            clearMultiSelection();
-            selectedNote = drawnNote;
-            for (int i = 0; i < (int)drawnNote->pitchCurve.size(); ++i)
-                multiSelection.push_back({ drawnNote, i });
-        }
-
         if (onNotesChanged) onNotesChanged();
     }
 
@@ -3017,7 +2773,7 @@ void PianoRoll::updateMarqueeSelection()
         {
             auto& pt = note.pitchCurve[(size_t)i];
             float px = bounds.getX() + (float)(pt.time / note.durationBeats) * bounds.getWidth();
-            float py = bounds.getCentreY() - (float)pt.pitchOffset * getPixelsPerSemitone();
+            float py = yForNoteOffset(note.noteNumber, (float)pt.pitchOffset);
 
             if (marqueeRect.contains(px, py))
             {
@@ -3028,13 +2784,8 @@ void PianoRoll::updateMarqueeSelection()
 
         if (!anyDotInside)
         {
-            float handleY = bounds.getY();
-            float handleCenterX = bounds.getCentreX();
-            if (marqueeRect.contains(handleCenterX, handleY) ||
-                marqueeRect.intersects(Rectangle<float>(bounds.getX(), bounds.getY(), bounds.getWidth(), handleHeight)))
-            {
+            if (bounds.getX() < 1.0e5f && marqueeRect.intersects(bounds))
                 multiSelection.push_back({ &note, -1 });
-            }
         }
     }
 }
@@ -3058,9 +2809,7 @@ void PianoRoll::mouseMove(const MouseEvent& e)
     hoveredPointIndex = -1;
     hoveredPointNote = nullptr;
 
-    bool expressionActive = gamakaStampName.isNotEmpty();
-
-    if (currentTool == EditorToolbar::Tool::Vibrato)
+    if (currentTool == ::Toolbar::Tool::Vibrato)
     {
         NoteData* vhNote = nullptr;
         int vhSeg = -1;
@@ -3110,8 +2859,39 @@ void PianoRoll::mouseMove(const MouseEvent& e)
         }
     }
 
-    if (currentTool == EditorToolbar::Tool::Edit || currentTool == EditorToolbar::Tool::Pencil
-        || currentTool == EditorToolbar::Tool::Vibrato)
+    if (currentTool == ::Toolbar::Tool::Move)
+    {
+        if (hoveredNote != nullptr)
+        {
+            auto b = boundsForNote(*hoveredNote);
+            bool inY = my >= b.getY() && my <= b.getBottom();
+            bool nearLeft = inY && mx >= b.getX() - 3.0f && mx <= b.getX() + edgeThreshold;
+            bool nearRight = inY && mx >= b.getRight() - edgeThreshold && mx <= b.getRight() + 3.0f;
+
+            handleHoveredNote = hoveredNote;
+            if (nearLeft || nearRight)
+            {
+                currentHoverZone = nearLeft ? HoverZone::HandleLeftEdge : HoverZone::HandleRightEdge;
+                setMouseCursor(MouseCursor::LeftRightResizeCursor);
+            }
+            else
+            {
+                currentHoverZone = HoverZone::Body;
+                setMouseCursor(inY ? MouseCursor::DraggingHandCursor : MouseCursor::NormalCursor);
+            }
+        }
+        else
+        {
+            currentHoverZone = HoverZone::None;
+            handleHoveredNote = nullptr;
+            setMouseCursor(MouseCursor::NormalCursor);
+        }
+        repaint();
+        return;
+    }
+
+    if (currentTool == ::Toolbar::Tool::Edit || currentTool == ::Toolbar::Tool::Pencil
+        || currentTool == ::Toolbar::Tool::Vibrato)
     {
         
         NoteData* cpNote = nullptr;
@@ -3149,15 +2929,14 @@ void PianoRoll::mouseMove(const MouseEvent& e)
                 {
                     
                     lineHoverMode = LineHoverMode::OnLine;
-                    hoveredSegmentIndex = -1;  
+                    hoveredSegmentIndex = -1;
                     highlightEntireCurve = false;
 
                     auto bounds = boundsForNote(*segNote);
-                    float pps = getPixelsPerSemitone();
                     double relTime = (double)(mx - bounds.getX()) / (double)bounds.getWidth() * segNote->durationBeats;
                     relTime = jlimit(0.0, segNote->durationBeats, relTime);
                     float pitchAtMouse = PitchCurveInterpolator::interpolate(segNote->pitchCurve, relTime);
-                    float dotY = bounds.getCentreY() - pitchAtMouse * pps;
+                    float dotY = yForNoteOffset(segNote->noteNumber, pitchAtMouse);
                     previewDotPos = { mx, dotY };
 
                     setMouseCursor(MouseCursor::CrosshairCursor);
@@ -3191,30 +2970,26 @@ void PianoRoll::mouseMove(const MouseEvent& e)
             {
                 handleHoveredNote = &note;
 
-                if (isInHandle(note, mx, my))
-                {
-                    float distFromLeft = mx - bounds.getX();
-                    float distFromRight = bounds.getRight() - mx;
+                bool inY = my >= bounds.getY() && my <= bounds.getBottom();
+                bool inX = mx >= bounds.getX() - 3.0f && mx <= bounds.getRight() + 3.0f;
+                bool nearLeft = inX && inY && mx - bounds.getX() <= edgeThreshold;
+                bool nearRight = inX && inY && bounds.getRight() - mx <= edgeThreshold;
 
-                    if (distFromLeft <= edgeThreshold)
-                    {
-                        currentHoverZone = HoverZone::HandleLeftEdge;
-                        setMouseCursor(MouseCursor::LeftRightResizeCursor);
-                    }
-                    else if (distFromRight <= edgeThreshold)
-                    {
-                        currentHoverZone = HoverZone::HandleRightEdge;
-                        setMouseCursor(MouseCursor::LeftRightResizeCursor);
-                    }
-                    else
-                    {
-                        currentHoverZone = HoverZone::Handle;
-                        setMouseCursor(MouseCursor::DraggingHandCursor);
-                    }
+                if (nearLeft || nearRight)
+                {
+                    currentHoverZone = nearLeft ? HoverZone::HandleLeftEdge
+                                                : HoverZone::HandleRightEdge;
+                    setMouseCursor(MouseCursor::LeftRightResizeCursor);
+                }
+                else if (inX && inY)
+                {
+                    currentHoverZone = HoverZone::Handle;
+                    setMouseCursor(currentTool == ::Toolbar::Tool::Pencil
+                                       ? MouseCursor::CrosshairCursor
+                                       : MouseCursor::DraggingHandCursor);
                 }
                 else
                 {
-                    
                     currentHoverZone = HoverZone::Body;
                     setMouseCursor(MouseCursor::CrosshairCursor);
                 }
@@ -3232,11 +3007,7 @@ void PianoRoll::mouseMove(const MouseEvent& e)
         }
     }
 
-    if (expressionActive && hoveredNote != nullptr)
-        setMouseCursor(expressionCursor);
-    else if (expressionActive)
-        setMouseCursor(MouseCursor::NormalCursor);
-    else if (currentTool == EditorToolbar::Tool::Pencil || currentTool == EditorToolbar::Tool::Vibrato)
+    if (currentTool == ::Toolbar::Tool::Pencil || currentTool == ::Toolbar::Tool::Vibrato)
         setMouseCursor(MouseCursor::CrosshairCursor);
     else
         
@@ -3256,7 +3027,7 @@ void PianoRoll::mouseWheelMove(const MouseEvent& e, const MouseWheelDetails& whe
         double leftPortion = (mousebeat - viewStartBeat) / beatRange;
 
         beatRange *= zoomFactor;
-        beatRange = jlimit(1.0, 256.0, beatRange); 
+        beatRange = jlimit(1.0, 256.0, beatRange);
 
         viewStartBeat = mousebeat - leftPortion * beatRange;
         viewEndBeat = viewStartBeat + beatRange;
@@ -3299,49 +3070,7 @@ void PianoRoll::mouseWheelMove(const MouseEvent& e, const MouseWheelDetails& whe
     }
 
     if (onViewChanged) onViewChanged();
+    rowCacheValid = false;
     repaint();
 }
 
-bool PianoRoll::isInterestedInDragSource(const SourceDetails& details)
-{
-    return details.description.toString().startsWith("expression:");
-}
-
-void PianoRoll::itemDragMove(const SourceDetails& details)
-{
-    float mx = (float)details.localPosition.x;
-    float my = (float)details.localPosition.y;
-    NoteData* note = findNoteAt(mx, my);
-    if (note != dropTargetNote)
-    {
-        dropTargetNote = note;
-        repaint();
-    }
-}
-
-void PianoRoll::itemDropped(const SourceDetails& details)
-{
-    auto desc = details.description.toString();
-    if (!desc.startsWith("expression:")) return;
-
-    String exprName = desc.fromFirstOccurrenceOf("expression:", false, false);
-    float mx = (float)details.localPosition.x;
-    float my = (float)details.localPosition.y;
-    NoteData* note = findNoteAt(mx, my);
-
-    if (note != nullptr && exprName.isNotEmpty())
-    {
-        saveUndoState();
-        auto gamakaPoints = generateGamakaForNote(exprName, note, 1.0f);
-
-        if (note->pitchCurve.empty())
-            note->pitchCurve = gamakaPoints;
-        else
-            PitchCurveInterpolator::mergeIntoCurve(note->pitchCurve, gamakaPoints, 0.0);
-
-        if (onNotesChanged) onNotesChanged();
-    }
-
-    dropTargetNote = nullptr;
-    repaint();
-}

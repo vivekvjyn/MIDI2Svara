@@ -5,8 +5,7 @@
 #include <atomic>
 #include "dsp/NoteData.h"
 #include "midi/RecordingBuffer.h"
-#include "io/PresetManager.h"
-#include "midi/MidiEngine.h"
+#include "midi/MidiOut.h"
 
 class Processor : public AudioProcessor,
                               public AsyncUpdater,
@@ -20,6 +19,7 @@ public:
     void releaseResources() override;
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
     void processBlock(AudioBuffer<float>&, MidiBuffer&) override;
+    using AudioProcessor::processBlock;
 
     AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
@@ -40,8 +40,21 @@ public:
     void getStateInformation(MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    PresetManager::State gatherState() const;
-    void applyState(const PresetManager::State& state);
+    struct State
+    {
+        std::vector<NoteData> notes;
+        double bpm = 120.0;
+        float masterVolume = 0.8f;
+        int midiOutputMode = 0;
+        int midiPitchBendRange = 48;
+        double viewStartBeat = 0.0;
+        double viewEndBeat = 16.0;
+        double viewLowest = 36.0;
+        double viewHighest = 84.0;
+    };
+
+    State gatherState() const;
+    void applyState(const State& state);
 
     std::function<void()> onStateLoaded;
 
@@ -88,12 +101,12 @@ public:
     void setMasterVolume(float v) { masterVolume.store(jlimit(0.0f, 1.0f, v)); }
     float getMasterVolume() const { return masterVolume.load(); }
 
-    void setMidiOutputMode(MidiEngine::Mode m) { midiEngine.setMode(m); }
-    MidiEngine::Mode getMidiOutputMode() const { return midiEngine.getMode(); }
-    MidiEngine& getMidiOutput() { return midiEngine; }
+    void setMidiOutputMode(MidiOut::Mode m) { midiEngine.setMode(m); }
+    MidiOut::Mode getMidiOutputMode() const { return midiEngine.getMode(); }
+    MidiOut& getMidiOutput() { return midiEngine; }
 
-    void setAmplitudeOutputMode(MidiEngine::AmplitudeMode m) { midiEngine.setAmplitudeMode(m); }
-    MidiEngine::AmplitudeMode getAmplitudeOutputMode() const { return midiEngine.getAmplitudeMode(); }
+    void setAmplitudeOutputMode(MidiOut::AmplitudeMode m) { midiEngine.setAmplitudeMode(m); }
+    MidiOut::AmplitudeMode getAmplitudeOutputMode() const { return midiEngine.getAmplitudeMode(); }
 
     void setUseSegmentedPlayback(bool) {}
     bool getUseSegmentedPlayback() const { return false; }
@@ -130,12 +143,23 @@ public:
     std::function<void()> onRecordingFinished;
 
 private:
+    static XmlElement stateToXml(const State& state);
+    static State xmlToState(const XmlElement& xml);
+    static void stateToBinary(const State& state, MemoryBlock& destData);
+    static State binaryToState(const void* data, int sizeInBytes);
+    static XmlElement noteToXml(const NoteData& note);
+    static NoteData xmlToNote(const XmlElement& xml);
+    static XmlElement pitchPointToXml(const PitchPoint& pt);
+    static PitchPoint xmlToPitchPoint(const XmlElement& xml);
+    static XmlElement vibratoToXml(const SegmentVibrato& vib);
+    static SegmentVibrato xmlToVibrato(const XmlElement& xml);
+
     void processSequencePlayback(AudioBuffer<float>& buffer, MidiBuffer& midiMessages,
                                  double beatsPerSample, bool hostControlled);
     void processLiveMidi(MidiBuffer& midiMessages, double beatsPerSample);
 
     NoteSequence noteSequence;
-    MidiEngine midiEngine;
+    MidiOut midiEngine;
 
     std::atomic<bool> playing { false };
     double playheadBeat = 0.0;

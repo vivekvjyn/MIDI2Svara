@@ -11,8 +11,8 @@ public:
     static std::vector<PitchPoint> generateVibrato(
         double startTime, double duration,
         float rate, float depth,
-        int shape,      
-        int direction,   
+        int shape,
+        int direction,
         float fadeIn, float fadeOut);
 
     

@@ -5,31 +5,19 @@
 #include <map>
 #include <atomic>
 
-
 struct RecordedNoteEvent
 {
-    int id = 0;                  
+    int id = 0;
     int noteNumber = 60;
     float velocity = 0.8f;
     double beatOn = 0.0;
-    double beatOff = -1.0;      
+    double beatOff = -1.0;
 };
-
 
 struct RecordedPitchSample
 {
     double beat = 0.0;
-    float semitones = 0.0f;   
-};
-
-
-struct RecordedExpression
-{
-    String presetName;
-    float intensity = 1.0f;
-    double triggerBeat = 0.0;
-    double durationBeats = 1.0;
-    int targetNoteId = -1;       
+    float semitones = 0.0f;
 };
 
 class RecordingBuffer
@@ -42,8 +30,6 @@ public:
     
     int noteOn(int noteNumber, float velocity, double beat);
     void noteOff(int noteNumber, double beat);
-    void expressionTriggered(const String& preset, float intensity,
-                             double beat, double duration, int targetNoteId);
     void pitchBend(double beat, float semitones);
     void pitchBendForNote(int noteId, double beat, float semitones);
     void expressionOffset(double beat, float semitones);
@@ -68,8 +54,7 @@ private:
     double recordStartBeat = 0.0;
     int nextNoteId = 1;
     std::vector<RecordedNoteEvent> noteEvents;
-    std::vector<RecordedExpression> expressions;
-    std::vector<RecordedPitchSample> pitchBends;              
-    std::map<int, std::vector<RecordedPitchSample>> perNotePitchBends;  
+    std::vector<RecordedPitchSample> pitchBends;
+    std::map<int, std::vector<RecordedPitchSample>> perNotePitchBends;
     std::vector<RecordedPitchSample> expressionOffsets;
 };

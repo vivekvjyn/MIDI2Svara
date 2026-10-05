@@ -4,14 +4,10 @@
 #include "../dsp/PitchCurve.h"
 #include "LookAndFeel.h"
 #include "NoteComponent.h"
-#include "CurveDrawing.h"
-#include "EditorToolbar.h"
-#include "SettingsPanel.h"
-#include "../dsp/CarnaticEngine.h"
+#include "Toolbar.h"
+#include <set>
 
-class PianoRoll : public Component,
-                    public Timer,
-                    public DragAndDropTarget
+class PianoRoll : public Component
 {
 public:
     PianoRoll(NoteSequence& notes);
@@ -25,33 +21,13 @@ public:
     void mouseMove(const MouseEvent& e) override;
     void mouseWheelMove(const MouseEvent& e, const MouseWheelDetails& wheel) override;
 
-    void timerCallback() override;
-
     
     void setViewRange(double startBeat, double endBeat, double lowestNote, double highestNote);
     void setPlayheadPosition(double beat) { playheadBeat = beat; repaint(); }
 
     
-    void setCurrentTool(EditorToolbar::Tool tool);
-    void setSnapMode(EditorToolbar::SnapMode mode) { snapMode = mode; }
+    void setCurrentTool(::Toolbar::Tool tool);
 
-    
-    
-    
-    
-    
-    
-    enum class PitchMode { Continuous = 0, Segmented = 1 };
-    void setPitchMode(PitchMode m) { pitchMode = m; repaint(); }
-    PitchMode getPitchMode() const { return pitchMode; }
-    void setGridDivision(double beats) { if (beats > 0.0) gridDivision = beats; repaint(); }
-    double getGridDivision() const { return gridDivision; }
-    
-    void quantizeNotes();
-
-    
-    void setGamakaStamp(const String& name, float intensity);
-    void clearExpressionStamp();
 
     
     struct RecPreviewPitch {
@@ -72,7 +48,6 @@ public:
         repaint();
     }
 
-
     
     void undo();
     void redo();
@@ -86,40 +61,41 @@ public:
     void transposeSelection(int semitones);
 
     
-    void simplifySelection();
+    
+    
+    
+    
+    void setRagaScale(const std::set<int>& intervals, int rootMidiNote, int vadiInterval)
+    {
+        ragaScale = intervals;
+        ragaRootMidi = rootMidiNote;
+        ragaVadiInterval = vadiInterval;
+        rowCacheValid = false;
+        repaint();
+    }
 
-    
-    
-    void mergeSelectedNotes();
-
-    
-    void smoothSelection();
-    void smoothSelection(float intensity);
-
-    
-    
-    
-    void smoothPreviewBegin();
-    void smoothPreviewUpdate(float intensity);
-    void smoothPreviewCommit();
-    void smoothPreviewCancel();
-
-    
-    void setSettingsPanelRef(SettingsPanel* panel) { settingsPanelRef = panel; }
-
-    
-    bool isInterestedInDragSource(const SourceDetails& details) override;
-    void itemDragEnter(const SourceDetails&) override {}
-    void itemDragExit(const SourceDetails&) override { dropTargetNote = nullptr; repaint(); }
-    void itemDragMove(const SourceDetails& details) override;
-    void itemDropped(const SourceDetails& details) override;
+    bool isNoteInRaga(int midiNote) const
+    {
+        if (ragaScale.empty()) return true;
+        int rel = ((midiNote - ragaRootMidi) % 12 + 12) % 12;
+        return ragaScale.count(rel) > 0;
+    }
 
     
     double beatAtX(float x) const;
     float xForBeat(double beat) const;
     int noteAtY(float y) const;
     float yForNote(double note) const;
-    float getPixelsPerSemitone() const;
+    float yForCents(double cents) const;
+    double centsAtY(float y) const;
+    float yForNoteOffset(double noteNumber, float offset) const;
+    float noteOffsetAtY(double noteNumber, float y) const;
+
+    const std::vector<int>& ragaRows() const;
+    float rowHeight() const;
+    float rowTopY(int note) const;
+    bool overlapsOtherNote(const NoteData* self, double startBeat,
+                           double endBeat, int noteNumber) const;
 
     
     double getViewStartBeat() const { return viewStartBeat; }
@@ -128,8 +104,6 @@ public:
     double getViewHighest() const { return viewHighest; }
 
     
-    void setFollowEnabled(bool on) { followEnabled = on; }
-    bool isFollowEnabled() const { return followEnabled; }
 
     
     
@@ -143,12 +117,11 @@ public:
     std::function<void(NoteData*)> onNoteSelected;
     std::function<void()> onNotesChanged;
     std::function<void()> onViewChanged;
-    std::function<void()> onActivated;
 
 private:
     void drawGrid(Graphics& g);
-    void drawGridBackground(Graphics& g, bool specVisible);
-    void drawGridLines(Graphics& g, bool specVisible);
+    void drawGridBackground(Graphics& g);
+    void drawGridLines(Graphics& g);
     
     
     
@@ -156,9 +129,7 @@ private:
     void drawNotes(Graphics& g, NoteDrawPass pass = NoteDrawPass::Both);
     void drawDefaultPitchLines(Graphics& g);
     void drawPlayhead(Graphics& g);
-    void drawFreehandPreview(Graphics& g);
     void drawHoverFeedback(Graphics& g);
-    void drawExpressionPreview(Graphics& g);
     void drawMarqueeSelection(Graphics& g);
     void drawRecordingOverlay(Graphics& g);
     void drawRecordingPreview(Graphics& g);
@@ -166,19 +137,16 @@ private:
     NoteData* findNoteAt(float x, float y);
     int findControlPointAt(NoteData* note, float x, float y);
     bool findAnyControlPoint(float x, float y, NoteData*& outNote, int& outIndex);
-    float snapPitch(float pitch) const;
     double snapBeat(double beat) const;
 
     Rectangle<float> boundsForNote(const NoteData& note) const;
 
     NoteSequence& noteSequence;
-    CurveDrawing curveDrawer;
 
-    EditorToolbar::Tool currentTool = EditorToolbar::Tool::Edit;
-    PitchMode pitchMode = PitchMode::Continuous;
+    ::Toolbar::Tool currentTool = ::Toolbar::Tool::Pencil;
 
-    EditorToolbar::SnapMode snapMode = EditorToolbar::SnapMode::Grid;
-    double gridDivision = 0.5; 
+    bool snapToGrid = true;
+    double gridDivision = 0.5;
 
     
     double viewStartBeat = 0.0;
@@ -189,7 +157,7 @@ private:
 
     
     bool followEnabled = true;
-    float visibleWidthFraction = 1.0f; 
+    float visibleWidthFraction = 1.0f;
 
     
     NoteData* selectedNote = nullptr;
@@ -197,10 +165,9 @@ private:
     int draggedPointIndex = -1;
     int hoveredPointIndex = -1;
     NoteData* hoveredPointNote = nullptr;
-    Point<float> dragStart;
 
     
-    enum class DragMode { None, DragPoint, MoveNote, ResizeStart, ResizeEnd, AdjustCurvature, VibratoHandle, MarqueeSelect, MarqueeMove, ScaleHorizontal, ScaleVertical, MoveLine };
+    enum class DragMode { None, DragPoint, MoveNote, ResizeStart, ResizeEnd, AdjustCurvature, VibratoHandle, MarqueeSelect, MarqueeMove, ScaleHorizontal, ScaleVertical, MoveLine, DrawNote };
     DragMode dragMode = DragMode::None;
     double noteDragStartBeat = 0.0;
     int noteDragStartNote = 0;
@@ -216,7 +183,6 @@ private:
     NoteData* handleHoveredNote = nullptr;
 
     
-    bool isInHandle(const NoteData& note, float mx, float my) const;
     bool isNearHandle(const NoteData& note, float mx, float my, float proximity = 12.0f) const;
 
     
@@ -231,22 +197,18 @@ private:
     
     enum class LineHoverMode { None, Near, OnLine };
     LineHoverMode lineHoverMode = LineHoverMode::None;
-    bool highlightEntireCurve = false;          
-    Point<float> previewDotPos;           
-    NoteData* lineDragNote = nullptr;           
+    bool highlightEntireCurve = false;
+    Point<float> previewDotPos;
+    NoteData* lineDragNote = nullptr;
     struct LineDragOrigPos { double time; double pitchOffset; };
     std::vector<LineDragOrigPos> lineDragOrigPositions;
 
     
-    String gamakaStampName;
-    float gamakaStampIntensity = 1.0f;
-    MouseCursor expressionCursor;
 
     
-    std::vector<PitchPoint> generateGamakaForNote(const String& name, NoteData* note, float intensity) const;
 
     
-    bool deselectedOnDown = false;   
+    bool deselectedOnDown = false;
     bool pointClickedOnDown = false;
     NoteData* clickedPointNote = nullptr;
     int clickedPointIndex = -1;
@@ -286,7 +248,7 @@ private:
     
     struct SelectedItem {
         NoteData* note = nullptr;
-        int pointIndex = -1;     
+        int pointIndex = -1;
     };
     std::vector<SelectedItem> multiSelection;
 
@@ -310,9 +272,9 @@ private:
     Rectangle<float> getMultiSelectionBoundingBox() const;
     void drawSelectionBoundingBox(Graphics& g);
     ScaleEdge findScaleEdgeAt(float mx, float my) const;
-    float scaleDragStartMouse = 0.0f;      
-    float scaleDragAnchor = 0.0f;          
-    float scaleDragMovingEdge = 0.0f;      
+    float scaleDragStartMouse = 0.0f;
+    float scaleDragAnchor = 0.0f;
+    float scaleDragMovingEdge = 0.0f;
 
     
     std::vector<std::vector<NoteData>> undoStack;
@@ -330,15 +292,15 @@ private:
 
 private:
     
-    bool smoothPreviewActive = false;
-    struct SmoothSnapshot { NoteData* note; std::vector<PitchPoint> originalCurve; };
-    std::vector<SmoothSnapshot> smoothSnapshots;
 
     
-    NoteData* dropTargetNote = nullptr;
 
     
-    SettingsPanel* settingsPanelRef = nullptr;
+    std::set<int> ragaScale;
+    int ragaRootMidi = 60;
+    int ragaVadiInterval = -1;
+    mutable std::vector<int> rowCache;
+    mutable bool rowCacheValid = false;
 
     void paintHorizontalScrollbar(Graphics& g);
     void mouseDownScrollbar(const MouseEvent& e);

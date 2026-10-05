@@ -1,6 +1,5 @@
 #include "Keyboard.h"
 
-
 Keyboard::Keyboard()
 {
     setSize(60, 400);
@@ -13,19 +12,32 @@ void Keyboard::setViewRange(double lowest, double highest)
     repaint();
 }
 
-int Keyboard::noteAtY(int y) const
+std::vector<int> Keyboard::ragaRows() const
 {
-    double noteRange = highestVisibleNote - lowestVisibleNote;
-    if (noteRange <= 0.0) return (int)lowestVisibleNote;
-    int note = (int)(highestVisibleNote - (double)y / (double)getHeight() * noteRange);
-    return jlimit((int)std::floor(lowestVisibleNote), (int)std::ceil(highestVisibleNote), note);
+    std::vector<int> rows;
+    int lo = (int)std::floor(lowestVisibleNote);
+    int hi = (int)std::ceil(highestVisibleNote);
+
+    for (int n = lo; n <= hi; ++n)
+        if (isInRaga(n))
+            rows.push_back(n);
+
+    if (rows.empty())
+        for (int n = lo; n <= hi; ++n)
+            rows.push_back(n);
+
+    return rows;
 }
 
-float Keyboard::yForNote(double note) const
+int Keyboard::noteAtY(int y) const
 {
-    double noteRange = highestVisibleNote - lowestVisibleNote;
-    if (noteRange <= 0.0) return 0.0f;
-    return (float)((highestVisibleNote - note) / noteRange * (double)getHeight());
+    auto rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || getHeight() <= 0) return (int)lowestVisibleNote;
+
+    float rh = (float)getHeight() / (float)count;
+    int idx = count - 1 - (int)((float)y / rh);
+    return rows[(size_t)jlimit(0, count - 1, idx)];
 }
 
 void Keyboard::setActiveNotes(const std::set<int>& notes)
@@ -48,84 +60,52 @@ void Keyboard::releaseMouseNote()
     }
 }
 
+bool Keyboard::isInRaga(int note) const
+{
+    if (ragaIntervals.empty()) return true;
+    int interval = ((note - rootMidiNote) % 12 + 12) % 12;
+    return ragaIntervals.count(interval) > 0;
+}
+
 void Keyboard::paint(Graphics& g)
 {
     g.fillAll(FPColours::background);
 
-    int h = getHeight();
     int w = getWidth();
-    double noteRange = highestVisibleNote - lowestVisibleNote;
-    if (noteRange <= 0.0) return;
+    int h = getHeight();
+    auto rows = ragaRows();
+    int count = (int)rows.size();
+    if (count == 0 || h <= 0) return;
 
-    noteHeight = jmax(1, (int)(h / noteRange));
+    float rh = (float)h / (float)count;
+    const float keyInset = 2.0f;
+    const float gap = 2.0f;
 
-    int lowInt = (int)std::floor(lowestVisibleNote);
-    int highInt = (int)std::ceil(highestVisibleNote);
-
-    const float blackKeyWidth = w * 0.55f;
-    const float blackKeyOffset = (w - blackKeyWidth) * 0.5f;
-    const float blackKeyHeightRatio = 0.65f;
-
-    for (int note = lowInt; note <= highInt; ++note)
+    int i = 0;
+    for (int note : rows)
     {
-        if (isBlackKey(note)) continue;
+        float top = (float)h - (float)(i + 1) * rh;
+        Rectangle<float> keyRect(keyInset, top + gap * 0.5f,
+                                 (float)w - keyInset * 2.0f, rh - gap);
+        ++i;
 
-        float y = yForNote((double)note);
-        float nextY = yForNote((double)(note + 1));
-        float keyH = y - nextY;
+        if (keyRect.getHeight() <= 1.0f) continue;
 
-        bool active = activeNotes.count(note) > 0;
         bool pressed = (note == mouseDownNote);
-        bool disabled = !ragaIntervals.empty() && ragaIntervals.count(((note - rootMidiNote) % 12 + 12) % 12) == 0;
+        bool active = activeNotes.count(note) > 0;
 
-        Colour keyColour;
-        if (disabled)
-            keyColour = Colour(0xff282830);
-        else if (pressed)
-            keyColour = Colour(0xff8888a0);
+        if (pressed)
+            g.setColour(FPColours::text);
         else if (active)
-            keyColour = Colour(0xff7090b0);
+            g.setColour(FPColours::buttonActive);
         else
-            keyColour = Colour(0xffd8d8d0);
+            g.setColour(FPColours::pianoWhiteKey);
+        g.fillRect(keyRect);
 
-        g.setColour(keyColour);
-        g.fillRect(0.0f, nextY, (float)w, keyH);
-
-        if (disabled)
-        {
-            g.setColour(Colour(0x10ffffff));
-            g.fillRect(0.0f, nextY, (float)w, keyH);
-        }
-
-        if (active || pressed)
-        {
-            g.setColour(FPColours::accentCyan.withAlpha(pressed ? 0.35f : 0.25f));
-            g.fillRect(0.0f, nextY, (float)w, keyH);
-        }
-
-        g.setColour(FPColours::pianoKeyBorder);
-        g.drawHorizontalLine((int)y, 0.0f, (float)w);
-
-        if (note % 12 == 0)
-        {
-            g.setColour(disabled ? FPColours::textDim : FPColours::text);
-            g.setFont(FontOptions(10.0f));
-            g.drawText(getNoteName(note), 2, (int)nextY, w - 4, (int)keyH, Justification::centredLeft);
-        }
-    }
-
-    for (int note = lowInt; note <= highInt; ++note)
-    {
-        if (!isBlackKey(note)) continue;
-
-        float y = yForNote((double)note);
-        float nextY = yForNote((double)(note + 1));
-        float fullKeyH = y - nextY;
-        float keyH = fullKeyH * blackKeyHeightRatio;
-        float keyY = nextY;
-
-        g.setColour(Colour(0xff0a0a0a));
-        g.fillRect(blackKeyOffset, keyY, blackKeyWidth, keyH);
+        g.setColour(pressed ? FPColours::surface : FPColours::textDim);
+        g.setFont(FontOptions(11.0f));
+        g.drawText(FPColours::swaraName(FPColours::relativeInterval(note, rootMidiNote)),
+                   keyRect.reduced(7.0f, 0.0f), Justification::centredLeft);
     }
 }
 

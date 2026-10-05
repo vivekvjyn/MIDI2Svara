@@ -2,15 +2,14 @@
 #include <JuceHeader.h>
 #include <vector>
 
-
 enum class VibratoWaveform
 {
-    Sine = 0,       
-    Triangle,       
-    Humanized,      
-    Vocal,          
-    Violin,         
-    Sitar,          
+    Sine = 0,
+    Triangle,
+    Humanized,
+    Vocal,
+    Violin,
+    Sitar,
     NumTypes
 };
 
@@ -29,22 +28,21 @@ inline const char* vibratoWaveformName(VibratoWaveform w)
     }
 }
 
-
 struct SegmentVibrato
 {
     bool enabled = false;
-    float rate = 5.0f;         
-    float depth = 0.2f;        
-    float fadeInFrac = 0.15f;  
-    float fadeOutFrac = 0.15f; 
-    float offset = 0.0f;       
+    float rate = 5.0f;
+    float depth = 0.2f;
+    float fadeInFrac = 0.15f;
+    float fadeOutFrac = 0.15f;
+    float offset = 0.0f;
     VibratoWaveform waveform = VibratoWaveform::Sine;
 };
 
 struct PitchPoint
 {
-    double time = 0.0;       
-    double pitchOffset = 0.0; 
+    double time = 0.0;
+    double pitchOffset = 0.0;
 
     enum class CurveType { Linear, Smooth, Step };
     CurveType curveType = CurveType::Smooth;
@@ -61,22 +59,21 @@ struct PitchPoint
     SegmentVibrato vibrato;
 };
 
-
 struct AmplitudePoint
 {
-    double time  = 0.0;   
-    float  value = 1.0f;  
+    double time  = 0.0;
+    float  value = 1.0f;
 };
 
 struct NoteData
 {
-    int noteNumber = 60;          
-    double startBeat = 0.0;       
-    double durationBeats = 1.0;   
-    float velocity = 0.8f;        
+    int noteNumber = 60;
+    double startBeat = 0.0;
+    double durationBeats = 1.0;
+    float velocity = 0.8f;
 
-    std::vector<PitchPoint> pitchCurve;          
-    std::vector<AmplitudePoint> amplitudeCurve;  
+    std::vector<PitchPoint> pitchCurve;
+    std::vector<AmplitudePoint> amplitudeCurve;
     bool selected = false;
 
     double getEndBeat() const { return startBeat + durationBeats; }

@@ -1,7 +1,6 @@
-#include "MidiEngine.h"
+#include "MidiOut.h"
 
-
-MidiEngine::MidiEngine()
+MidiOut::MidiOut()
 {
     for (auto& ch : mpeChannels)
     {
@@ -10,7 +9,7 @@ MidiEngine::MidiEngine()
     }
 }
 
-void MidiEngine::setMode(Mode m)
+void MidiOut::setMode(Mode m)
 {
     mode = m;
     if (mode == Mode::MPE)
@@ -19,17 +18,17 @@ void MidiEngine::setMode(Mode m)
         pitchBendRangeSemitones = 2;
 }
 
-void MidiEngine::setPitchBendRange(int semitones)
+void MidiOut::setPitchBendRange(int semitones)
 {
     pitchBendRangeSemitones = jlimit(1, 96, semitones);
 }
 
-void MidiEngine::prepareBlock(int )
+void MidiOut::prepareBlock(int )
 {
     
 }
 
-int MidiEngine::allocateMPEChannel(int noteNumber)
+int MidiOut::allocateMPEChannel(int noteNumber)
 {
     
     for (int i = 0; i < numMPEChannels; ++i)
@@ -74,7 +73,7 @@ int MidiEngine::allocateMPEChannel(int noteNumber)
     return idx + 2;
 }
 
-void MidiEngine::freeMPEChannel(int noteNumber)
+void MidiOut::freeMPEChannel(int noteNumber)
 {
     for (auto& ch : mpeChannels)
     {
@@ -87,7 +86,7 @@ void MidiEngine::freeMPEChannel(int noteNumber)
     }
 }
 
-int MidiEngine::getChannelForNote(int noteNumber) const
+int MidiOut::getChannelForNote(int noteNumber) const
 {
     if (mode == Mode::Mono)
         return 1;
@@ -99,10 +98,10 @@ int MidiEngine::getChannelForNote(int noteNumber) const
             && mpeChannels[(size_t)i].active)
             return i + 2;
     }
-    return -1; 
+    return -1;
 }
 
-int MidiEngine::semitonesToPitchWheel(float semitones) const
+int MidiOut::semitonesToPitchWheel(float semitones) const
 {
     if (pitchBendRangeSemitones <= 0) return 8192;
     float normalized = semitones / (float)pitchBendRangeSemitones;
@@ -110,7 +109,7 @@ int MidiEngine::semitonesToPitchWheel(float semitones) const
     return jlimit(0, 16383, value);
 }
 
-void MidiEngine::noteOn(int noteNumber, float velocity, int sampleOffset,
+void MidiOut::noteOn(int noteNumber, float velocity, int sampleOffset,
                                   MidiBuffer& output)
 {
     if (mode == Mode::MPE)
@@ -128,12 +127,12 @@ void MidiEngine::noteOn(int noteNumber, float velocity, int sampleOffset,
     }
 }
 
-void MidiEngine::noteOff(int noteNumber, int sampleOffset, MidiBuffer& output)
+void MidiOut::noteOff(int noteNumber, int sampleOffset, MidiBuffer& output)
 {
     if (mode == Mode::MPE)
     {
         int channel = getChannelForNote(noteNumber);
-        if (channel < 0) channel = 1; 
+        if (channel < 0) channel = 1;
 
         output.addEvent(MidiMessage::noteOff(channel, noteNumber, 0.0f), sampleOffset);
         freeMPEChannel(noteNumber);
@@ -146,7 +145,7 @@ void MidiEngine::noteOff(int noteNumber, int sampleOffset, MidiBuffer& output)
     }
 }
 
-void MidiEngine::pitchBend(int noteNumber, float pitchOffsetSemitones,
+void MidiOut::pitchBend(int noteNumber, float pitchOffsetSemitones,
                                      int sampleOffset, MidiBuffer& output)
 {
     int wheelValue = semitonesToPitchWheel(pitchOffsetSemitones);
@@ -154,7 +153,7 @@ void MidiEngine::pitchBend(int noteNumber, float pitchOffsetSemitones,
     if (mode == Mode::MPE)
     {
         int channel = getChannelForNote(noteNumber);
-        if (channel < 0) return; 
+        if (channel < 0) return;
 
         output.addEvent(MidiMessage::pitchWheel(channel, wheelValue), sampleOffset);
     }
@@ -166,7 +165,7 @@ void MidiEngine::pitchBend(int noteNumber, float pitchOffsetSemitones,
     }
 }
 
-void MidiEngine::sendMPEConfiguration(MidiBuffer& output)
+void MidiOut::sendMPEConfiguration(MidiBuffer& output)
 {
     
     int channel = 1;
@@ -188,7 +187,7 @@ void MidiEngine::sendMPEConfiguration(MidiBuffer& output)
     }
 }
 
-void MidiEngine::allNotesOff(MidiBuffer& output, int sampleOffset)
+void MidiOut::allNotesOff(MidiBuffer& output, int sampleOffset)
 {
     if (mode == Mode::MPE)
     {
@@ -216,7 +215,7 @@ void MidiEngine::allNotesOff(MidiBuffer& output, int sampleOffset)
     nextRoundRobin = 0;
 }
 
-int MidiEngine::allocFreshChannel(int noteNumber)
+int MidiOut::allocFreshChannel(int noteNumber)
 {
     if (mode == Mode::Mono) return 1;
 
@@ -236,7 +235,7 @@ int MidiEngine::allocFreshChannel(int noteNumber)
     return -1;
 }
 
-void MidiEngine::releaseChannel(int channel)
+void MidiOut::releaseChannel(int channel)
 {
     if (mode == Mode::Mono) return;
     int idx = channel - 2;
@@ -246,7 +245,7 @@ void MidiEngine::releaseChannel(int channel)
     mpeChannels[(size_t)idx].explicitAlloc = false;
 }
 
-void MidiEngine::noteOnAt(int channel, int noteNumber, float velocity,
+void MidiOut::noteOnAt(int channel, int noteNumber, float velocity,
                                     int sampleOffset, MidiBuffer& output)
 {
     if (mode == Mode::MPE)
@@ -261,7 +260,7 @@ void MidiEngine::noteOnAt(int channel, int noteNumber, float velocity,
     }
 }
 
-void MidiEngine::noteOffAt(int channel, int noteNumber, int sampleOffset,
+void MidiOut::noteOffAt(int channel, int noteNumber, int sampleOffset,
                                      MidiBuffer& output)
 {
     if (mode == Mode::MPE)
@@ -275,7 +274,7 @@ void MidiEngine::noteOffAt(int channel, int noteNumber, int sampleOffset,
     }
 }
 
-void MidiEngine::pitchBendAt(int channel, float pitchOffsetSemitones,
+void MidiOut::pitchBendAt(int channel, float pitchOffsetSemitones,
                                        int sampleOffset, MidiBuffer& output)
 {
     int wheelValue = semitonesToPitchWheel(pitchOffsetSemitones);
@@ -285,7 +284,7 @@ void MidiEngine::pitchBendAt(int channel, float pitchOffsetSemitones,
         output.addEvent(MidiMessage::pitchWheel(1, wheelValue), sampleOffset);
 }
 
-void MidiEngine::setAmplitudeMode(AmplitudeMode m)
+void MidiOut::setAmplitudeMode(AmplitudeMode m)
 {
     if (m == amplitudeMode) return;
     amplitudeMode = m;
@@ -293,13 +292,13 @@ void MidiEngine::setAmplitudeMode(AmplitudeMode m)
     for (auto& v : lastAmplitudeValue) v = -1;
 }
 
-void MidiEngine::setCustomAmplitudeCC(int ccNumber)
+void MidiOut::setCustomAmplitudeCC(int ccNumber)
 {
     customAmplitudeCC = jlimit(0, 127, ccNumber);
     for (auto& v : lastAmplitudeValue) v = -1;
 }
 
-void MidiEngine::amplitudeAt(int channel, float value0to1,
+void MidiOut::amplitudeAt(int channel, float value0to1,
                                        int sampleOffset, MidiBuffer& output)
 {
     if (amplitudeMode == AmplitudeMode::None) return;

@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include <array>
 
-class MidiEngine
+class MidiOut
 {
 public:
     enum class Mode { MPE, Mono };
@@ -10,16 +10,16 @@ public:
     
     enum class AmplitudeMode
     {
-        None       = 0,   
-        Pressure   = 1,   
-        ModWheel   = 2,   
-        Breath     = 3,   
-        Volume     = 4,   
-        Expression = 5,   
-        CustomCC   = 6    
+        None       = 0,
+        Pressure   = 1,
+        ModWheel   = 2,
+        Breath     = 3,
+        Volume     = 4,
+        Expression = 5,
+        CustomCC   = 6
     };
 
-    MidiEngine();
+    MidiOut();
 
     void setMode(Mode m);
     Mode getMode() const { return mode; }
@@ -72,10 +72,10 @@ public:
 
 private:
     Mode mode = Mode::MPE;
-    int pitchBendRangeSemitones = 48; 
+    int pitchBendRangeSemitones = 48;
 
     AmplitudeMode amplitudeMode = AmplitudeMode::Expression;
-    int           customAmplitudeCC = 11; 
+    int           customAmplitudeCC = 11;
     
     
     std::array<int, 17> lastAmplitudeValue { -1, -1, -1, -1, -1, -1, -1, -1,
@@ -86,9 +86,9 @@ private:
     static constexpr int numMPEChannels = 15;
 
     struct ChannelSlot {
-        int noteNumber = -1;  
+        int noteNumber = -1;
         bool active = false;
-        bool explicitAlloc = false; 
+        bool explicitAlloc = false;
     };
     std::array<ChannelSlot, numMPEChannels> mpeChannels;
     int nextRoundRobin = 0;

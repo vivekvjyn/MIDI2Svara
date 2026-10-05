@@ -2,7 +2,6 @@
 #include <cmath>
 #include <algorithm>
 
-
 float PitchCurveInterpolator::catmullRom(float p0, float p1, float p2, float p3, float t)
 {
     float t2 = t * t;
@@ -122,7 +121,7 @@ float PitchCurveInterpolator::interpolate(const std::vector<PitchPoint>& points,
             {
                 
                 wave = std::sin(phase) + 0.22f * std::sin(phase * 2.0f + 0.5f);
-                wave *= 0.82f; 
+                wave *= 0.82f;
                 break;
             }
             case VibratoWaveform::Violin:
@@ -130,14 +129,14 @@ float PitchCurveInterpolator::interpolate(const std::vector<PitchPoint>& points,
                 
                 wave = std::sin(phase) + 0.15f * std::sin(phase * 2.02f)
                      + 0.08f * std::sin(phase * 3.01f);
-                wave *= 0.8f; 
+                wave *= 0.8f;
                 break;
             }
             case VibratoWaveform::Sitar:
             {
                 
                 wave = std::sin(phase) * (1.0f + 0.35f * std::sin(phase * 0.333f + 0.7f));
-                wave *= 0.74f; 
+                wave *= 0.74f;
                 break;
             }
             case VibratoWaveform::NumTypes:
@@ -158,7 +157,7 @@ std::vector<PitchPoint> PitchCurveInterpolator::generateVibrato(
     float fadeIn, float fadeOut)
 {
     std::vector<PitchPoint> points;
-    const double step = 0.01; 
+    const double step = 0.01;
 
     for (double t = 0.0; t <= duration; t += step)
     {
@@ -168,26 +167,26 @@ std::vector<PitchPoint> PitchCurveInterpolator::generateVibrato(
 
         switch (shape)
         {
-            case 0: 
+            case 0:
                 value = std::sin(phase);
                 break;
-            case 1: 
+            case 1:
                 value = (float)(2.0 * std::asin(std::sin(phase)) / MathConstants<double>::pi);
                 break;
-            case 2: 
+            case 2:
                 value = (float)(2.0 * (t * rate - std::floor(t * rate + 0.5)));
                 break;
-            case 3: 
+            case 3:
                 value = std::sin(phase) >= 0.0f ? 1.0f : -1.0f;
                 break;
         }
 
         switch (direction)
         {
-            case 1: value = std::abs(value); break;         
-            case 2: value = -std::abs(value); break;        
-            case 3: value = value > 0 ? value * 0.7f : value * 1.3f; break; 
-            default: break; 
+            case 1: value = std::abs(value); break;
+            case 2: value = -std::abs(value); break;
+            case 3: value = value > 0 ? value * 0.7f : value * 1.3f; break;
+            default: break;
         }
 
         float envelope = 1.0f;
@@ -196,7 +195,7 @@ std::vector<PitchPoint> PitchCurveInterpolator::generateVibrato(
         if (fadeOut > 0.0f && (duration - t) < fadeOut)
             envelope *= (float)((duration - t) / fadeOut);
 
-        float offset = value * depth * envelope / 100.0f; 
+        float offset = value * depth * envelope / 100.0f;
 
         PitchPoint pp;
         pp.time = absTime;
@@ -217,183 +216,183 @@ std::vector<PitchPoint> PitchCurveInterpolator::generateGamaka(
     struct PatternDef {
         float time;
         float pitch;
-        float bias = 0.0f;       
-        float curvature = 1.0f;  
+        float bias = 0.0f;
+        float curvature = 1.0f;
     };
 
     std::vector<PatternDef> pattern;
 
-    if (patternName == "kampita")  
+    if (patternName == "kampita")
     {
         pattern = {{0.0f, 0.0f, 0.0f, 0.6f}, {0.15f, 1.0f}, {0.35f, -0.4f},
                    {0.55f, 0.8f}, {0.78f, -0.2f}, {1.0f, 0.0f, 0.0f, 0.5f}};
     }
-    else if (patternName == "jaru_up")  
+    else if (patternName == "jaru_up")
     {
         pattern = {{0.0f, -2.0f, 0.8f}, {0.5f, -0.3f, -0.5f}, {1.0f, 0.0f, 0.0f, 0.4f}};
     }
-    else if (patternName == "jaru_down")  
+    else if (patternName == "jaru_down")
     {
         pattern = {{0.0f, 0.0f, 0.5f, 0.4f}, {0.5f, -0.3f, -0.8f}, {1.0f, -2.0f}};
     }
-    else if (patternName == "odukkal")  
+    else if (patternName == "odukkal")
     {
         pattern = {{0.0f, 0.0f, 0.3f, 0.5f}, {0.3f, -0.5f, -0.6f}, {1.0f, -2.0f}};
     }
-    else if (patternName == "orikkai")  
+    else if (patternName == "orikkai")
     {
         pattern = {{0.0f, 0.0f}, {0.1f, 1.0f}, {0.22f, -0.4f},
                    {0.35f, 0.0f, 0.0f, 0.3f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "pratyahata")  
+    else if (patternName == "pratyahata")
     {
         pattern = {{0.0f, 0.0f, 0.4f, 0.8f}, {0.25f, 1.2f, -0.3f},
                    {0.6f, 0.1f, -0.4f, 0.5f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "ravai")  
+    else if (patternName == "ravai")
     {
         pattern = {{0.0f, 0.0f, 0.6f, 0.3f}, {0.12f, 1.5f, -0.5f},
                    {0.45f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "sphurita")  
+    else if (patternName == "sphurita")
     {
         pattern = {{0.0f, 1.0f}, {0.15f, 0.0f}, {0.3f, 0.85f},
                    {0.5f, 0.0f}, {0.7f, 0.5f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "meend_up")  
+    else if (patternName == "meend_up")
     {
         pattern = {{0.0f, -2.5f, 0.9f}, {1.0f, 0.0f, 0.0f, 0.4f}};
     }
-    else if (patternName == "meend_down")  
+    else if (patternName == "meend_down")
     {
         pattern = {{0.0f, 0.0f, -0.9f, 0.4f}, {1.0f, -2.5f}};
     }
-    else if (patternName == "andolan")  
+    else if (patternName == "andolan")
     {
         pattern = {{0.0f, 0.0f}, {0.25f, 0.4f}, {0.5f, 0.0f},
                    {0.75f, -0.35f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "gamak")  
+    else if (patternName == "gamak")
     {
         pattern = {{0.0f, 0.0f}, {0.1f, 1.2f}, {0.25f, -0.8f}, {0.4f, 1.0f},
                    {0.55f, -0.7f}, {0.72f, 0.8f}, {0.88f, -0.3f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "krintan")  
+    else if (patternName == "krintan")
     {
         pattern = {{0.0f, 0.0f, 0.5f}, {0.08f, -1.0f, -0.5f}, {0.18f, 0.0f, 0.4f},
                    {0.28f, -0.8f, -0.4f}, {0.4f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "murki")  
+    else if (patternName == "murki")
     {
         pattern = {{0.0f, 0.0f}, {0.06f, 0.5f}, {0.12f, -0.3f},
                    {0.2f, 0.4f}, {0.28f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "zamzama")  
+    else if (patternName == "zamzama")
     {
         pattern = {{0.0f, 0.0f}, {0.1f, 1.0f}, {0.22f, -0.5f}, {0.34f, 0.7f},
                    {0.48f, -0.3f}, {0.65f, 0.3f, -0.3f, 0.5f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "trill")  
+    else if (patternName == "trill")
     {
         pattern = {{0.0f, 0.0f}, {0.1f, 1.0f}, {0.2f, 0.0f}, {0.3f, 1.0f},
                    {0.4f, 0.0f}, {0.5f, 1.0f}, {0.6f, 0.0f}, {0.72f, 0.9f},
                    {0.85f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "qtr_shake")  
+    else if (patternName == "qtr_shake")
     {
         pattern = {{0.0f, 0.0f}, {0.15f, 0.5f}, {0.3f, 0.0f}, {0.45f, 0.5f},
                    {0.6f, 0.0f}, {0.78f, 0.4f}, {0.92f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "maqam_slide")  
+    else if (patternName == "maqam_slide")
     {
         pattern = {{0.0f, 0.0f, 0.6f}, {0.4f, 1.5f, 0.0f, 1.2f},
                    {0.7f, 1.5f, -0.6f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "ornament_turn")  
+    else if (patternName == "ornament_turn")
     {
         pattern = {{0.0f, 0.0f}, {0.15f, 0.8f}, {0.35f, 0.0f},
                    {0.5f, -0.8f}, {0.7f, 0.0f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "bend_up")  
+    else if (patternName == "bend_up")
     {
         pattern = {{0.0f, 0.0f, 0.9f}, {0.6f, 1.2f, -0.5f, 0.8f}, {1.0f, 2.0f, 0.0f, 0.3f}};
     }
-    else if (patternName == "bend_down")  
+    else if (patternName == "bend_down")
     {
         pattern = {{0.0f, 2.0f, -0.9f, 0.3f}, {0.4f, 0.8f, 0.5f, 0.8f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "scoop")  
+    else if (patternName == "scoop")
     {
         pattern = {{0.0f, -1.5f, -0.7f}, {0.35f, -0.1f, -0.4f, 0.5f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "fall_off")  
+    else if (patternName == "fall_off")
     {
         pattern = {{0.0f, 0.0f}, {0.6f, 0.0f, 0.8f}, {1.0f, -2.5f}};
     }
-    else if (patternName == "ghost_bend")  
+    else if (patternName == "ghost_bend")
     {
         pattern = {{0.0f, 0.0f, 0.5f}, {0.35f, 1.0f, 0.0f, 1.2f},
                    {0.65f, 1.0f, -0.5f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "blues_curl")  
+    else if (patternName == "blues_curl")
     {
         pattern = {{0.0f, -0.3f, 0.5f}, {0.12f, 0.5f, -0.3f},
                    {0.4f, 0.0f}, {0.65f, -0.1f, 0.3f, 0.5f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "nori")  
+    else if (patternName == "nori")
     {
         pattern = {{0.0f, 0.0f}, {0.12f, 0.3f}, {0.28f, 0.0f},
                    {0.45f, 0.2f}, {0.65f, 0.0f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "yuri")  
+    else if (patternName == "yuri")
     {
         pattern = {{0.0f, 0.0f}, {0.25f, 0.25f}, {0.5f, -0.15f},
                    {0.75f, 0.15f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "oshide")  
+    else if (patternName == "oshide")
     {
         pattern = {{0.0f, 0.0f, 0.7f, 0.3f}, {0.15f, 1.0f, 0.0f, 1.3f},
                    {0.4f, 1.0f, -0.7f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "cry")  
+    else if (patternName == "cry")
     {
         pattern = {{0.0f, -0.5f, 0.7f, 0.3f}, {0.08f, 1.8f, -0.6f},
                    {0.4f, 0.2f, -0.4f, 0.5f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "ayeo")  
+    else if (patternName == "ayeo")
     {
         pattern = {{0.0f, 0.0f}, {0.12f, 0.8f}, {0.25f, -0.3f}, {0.38f, 1.2f},
                    {0.55f, 0.0f}, {0.72f, 0.5f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "quejio")  
+    else if (patternName == "quejio")
     {
         pattern = {{0.0f, 0.0f, 0.5f}, {0.07f, -1.0f, 0.6f, 0.4f}, {0.15f, 1.5f, -0.3f},
                    {0.35f, 1.0f}, {0.55f, 0.5f}, {0.78f, 0.15f, -0.3f, 0.5f}, {1.0f, 0.0f}};
     }
 
-    else if (patternName == "vocal_scoop")  
+    else if (patternName == "vocal_scoop")
     {
         pattern = {{0.0f, -0.8f, -0.6f}, {0.3f, -0.05f, -0.3f, 0.4f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "vocal_drop")  
+    else if (patternName == "vocal_drop")
     {
         pattern = {{0.0f, 0.0f}, {0.55f, 0.0f, 0.8f}, {1.0f, -1.5f}};
     }
-    else if (patternName == "vocal_riff")  
+    else if (patternName == "vocal_riff")
     {
         pattern = {{0.0f, 0.0f}, {0.1f, 0.6f}, {0.2f, -0.3f}, {0.32f, 0.8f},
                    {0.45f, -0.5f}, {0.58f, 0.3f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "portamento_up")  
+    else if (patternName == "portamento_up")
     {
         pattern = {{0.0f, -2.0f, 0.6f}, {1.0f, 0.0f}};
     }
-    else if (patternName == "portamento_dn")  
+    else if (patternName == "portamento_dn")
     {
         pattern = {{0.0f, 0.0f, -0.6f}, {1.0f, -2.0f}};
     }

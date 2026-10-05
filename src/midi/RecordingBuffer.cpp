@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-
 void RecordingBuffer::startRecording(double startBeat)
 {
     clear();
@@ -59,18 +58,6 @@ int RecordingBuffer::getActiveNoteId(int noteNumber) const
     return -1;
 }
 
-void RecordingBuffer::expressionTriggered(const String& preset, float intensity,
-                                          double beat, double duration, int targetNoteId)
-{
-    RecordedExpression expr;
-    expr.presetName = preset;
-    expr.intensity = intensity;
-    expr.triggerBeat = beat;
-    expr.durationBeats = duration;
-    expr.targetNoteId = targetNoteId;
-    expressions.push_back(expr);
-}
-
 void RecordingBuffer::pitchBend(double beat, float semitones)
 {
     pitchBends.push_back({ beat, semitones });
@@ -114,7 +101,7 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
         std::vector<RecordedPitchSample> out;
         for (auto& s : src)
         {
-            if (s.beat >= noteOn && s.beat <= noteOff)  
+            if (s.beat >= noteOn && s.beat <= noteOff)
                 out.push_back(s);
         }
         return out;
@@ -125,7 +112,7 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
         NoteData nd;
         nd.noteNumber = evt.noteNumber;
         nd.velocity = evt.velocity;
-        nd.startBeat = evt.beatOn - recordStartBeat;  
+        nd.startBeat = evt.beatOn - recordStartBeat;
         nd.durationBeats = (evt.beatOff >= 0.0)
                                ? (evt.beatOff - evt.beatOn)
                                : 1.0;
@@ -150,7 +137,7 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
         {
             
             std::vector<double> timestamps;
-            timestamps.push_back(evt.beatOn);  
+            timestamps.push_back(evt.beatOn);
 
             for (auto& s : pbSamples) timestamps.push_back(s.beat);
             for (auto& s : exSamples) timestamps.push_back(s.beat);
@@ -178,7 +165,7 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
                 float total = pbVal + exVal;
 
                 PitchPoint pp;
-                pp.time = beat - evt.beatOn;  
+                pp.time = beat - evt.beatOn;
                 pp.pitchOffset = (double)total;
                 pp.curveType = PitchPoint::CurveType::Smooth;
                 nd.pitchCurve.push_back(pp);
@@ -197,7 +184,7 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
             {
                 PitchPoint endPt;
                 endPt.time = nd.durationBeats;
-                endPt.pitchOffset = nd.pitchCurve.back().pitchOffset;  
+                endPt.pitchOffset = nd.pitchCurve.back().pitchOffset;
                 endPt.curveType = PitchPoint::CurveType::Linear;
                 nd.pitchCurve.push_back(endPt);
             }
@@ -212,7 +199,6 @@ std::vector<NoteData> RecordingBuffer::toNoteData() const
 void RecordingBuffer::clear()
 {
     noteEvents.clear();
-    expressions.clear();
     pitchBends.clear();
     perNotePitchBends.clear();
     expressionOffsets.clear();

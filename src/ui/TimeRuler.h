@@ -15,9 +15,6 @@ public:
     double getBeatAtX(int x) const;
     int getXForBeat(double beat) const;
 
-    double getStartBeat() const { return viewStartBeat; }
-    double getEndBeat() const { return viewEndBeat; }
-
     std::function<void(double)> onPositionClicked;
 
 private:
